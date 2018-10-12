@@ -1,0 +1,9 @@
+**/generated/*
+!**/generated/.gitkeep
+
+*.bc
+*.ll
+*.o
+*.so
+*.so.*
+main
