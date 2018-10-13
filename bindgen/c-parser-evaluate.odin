@@ -30,13 +30,15 @@ evaluate_level_4 :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool
         v : LiteralValue;
         eat_token(data);
         v, ok = evaluate_level_4(data);
-        value = value.(i64) + v.(i64);
+        if is_i64(v) do value = value.(i64) + v.(i64);
+        else if is_f64(v) do value = value.(f64) + v.(f64);
     }
     else if token == "-" {
         v : LiteralValue;
         eat_token(data);
         v, ok = evaluate_level_4(data);
-        value = value.(i64) - v.(i64);
+        if is_i64(v) do value = value.(i64) - v.(i64);
+        else if is_f64(v) do value = value.(f64) - v.(f64);
     }
 
     return;
@@ -52,13 +54,15 @@ evaluate_level_3 :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool
         v : LiteralValue;
         eat_token(data);
         v, ok = evaluate_level_3(data);
-        value = value.(i64) * v.(i64);
+        if is_i64(v) do value = value.(i64) * v.(i64);
+        else if is_f64(v) do value = value.(f64) * v.(f64);
     }
     else if token == "/" {
         v : LiteralValue;
         eat_token(data);
         v, ok = evaluate_level_3(data);
-        value = value.(i64) / v.(i64);
+        if is_i64(v) do value = value.(i64) / v.(i64);
+        else if is_f64(v) do value = value.(f64) / v.(f64);
     }
 
     return;
@@ -111,7 +115,6 @@ evaluate_level_0 :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool
     else {
         fmt.print("[bindgen] Warning: Unknown token ", token, " for expression evaluation.\n");
         ok = false;
-        return;
     }
 
     return;
@@ -124,9 +127,29 @@ evaluate_parentheses :: proc(data : ^ParserData) -> (value : LiteralValue, ok : 
     return;
 }
 
-evaluate_number_literal :: proc(data : ^ParserData) -> i64 {
+evaluate_number_literal :: proc(data : ^ParserData) -> (value : LiteralValue) {
     token := parse_any(data);
-    value := strconv.parse_i64(token);
+
+    // Check if any point or scientific notation in number
+    foundPointOrExp := false;
+    for c in token {
+        if c == '.' || c == 'e' || c == 'E' {
+            foundPointOrExp = true;
+            break;
+        }
+    }
+
+    isHexadecimal := len(token) >= 2 && token[:1] == "0x";
+
+    // Floating point
+    if !isHexadecimal && (foundPointOrExp || token[len(token)-1] == 'f') {
+        value = strconv.parse_f64(token);
+    }
+    // Integer
+    else {
+        value = strconv.parse_i64(token);
+    }
+
     return value;
 }
 
@@ -138,4 +161,16 @@ evaluate_string_literal :: proc(data : ^ParserData) -> string {
 evaluate_knowned_literal :: proc(data : ^ParserData) -> LiteralValue {
     token := parse_any(data);
     return data.knownedLiterals[token];
+}
+
+is_i64 :: proc(value : LiteralValue) -> (ok : bool) {
+    v : i64;
+    v, ok = value.(i64);
+    return ok;
+}
+
+is_f64 :: proc(value : LiteralValue) -> (ok : bool) {
+    v : f64;
+    v, ok = value.(f64);
+    return ok;
 }

@@ -6,6 +6,9 @@ import "core:fmt"
 export_defines :: proc(data : ^GeneratorData) {
     for node in data.nodes.defines {
         defineName := clean_define_name(node.name, data.options);
+
+        // @fixme fprint of float numbers are pretty badly handled,
+        // just has a 10^-3 precision. 
         fmt.fprint(data.handle, defineName, " :: ", node.value, ";\n");
     }
     fmt.fprint(data.handle, "\n");

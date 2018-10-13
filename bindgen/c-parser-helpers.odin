@@ -55,9 +55,18 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
                     data.bytes[offset] == '.' {
                     offset += 1;
                 }
-            }
 
-            // @todo Not handling scientific notation "5e-10"
+                if (data.bytes[offset] == 'e' || data.bytes[offset] == 'E') {
+                    offset += 1;
+                    if data.bytes[offset] == '-' {
+                        offset += 1;
+                    }
+                }
+
+                for (data.bytes[offset] >= '0' && data.bytes[offset] <= '9') {
+                    offset += 1;
+                }
+            }
 
             // Number suffix?
             for (data.bytes[offset] == 'u' || data.bytes[offset] == 'U') ||

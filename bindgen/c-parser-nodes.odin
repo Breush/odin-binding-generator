@@ -49,6 +49,7 @@ Nodes :: struct {
 
 LiteralValue :: union {
     i64,
+    f64,
     string,
 }
 
