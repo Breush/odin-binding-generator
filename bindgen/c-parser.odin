@@ -84,21 +84,21 @@ parse_identifier :: proc(data : ^ParserData) -> string {
 }
 
 parse_type :: proc(data : ^ParserData) -> Type {
-    kind : Type;
+    type : Type;
 
     startOffset := data.offset;
     eat_type_specifiers(data);
-    kind.prefix = extract_string(data, startOffset, data.offset);
+    type.prefix = extract_string(data, startOffset, data.offset);
 
     startOffset = data.offset;
     eat_token(data);
-    kind.main = extract_string(data, startOffset, data.offset);
+    type.main = extract_string(data, startOffset, data.offset);
 
     startOffset = data.offset;
     eat_type_specifiers(data);
-    kind.postfix = extract_string(data, startOffset, data.offset);
+    type.postfix = extract_string(data, startOffset, data.offset);
 
-    return kind;
+    return type;
 }
 
 /**
@@ -299,8 +299,8 @@ parse_enum_members :: proc(data : ^ParserData, members : ^[dynamic]EnumMember) {
 
 /**
  *  {
- *      <kind> <name>;
- *      <kind> <name>[<dimension>];
+ *      <type> <name>;
+ *      <type> <name>[<dimension>];
  *  }
  */
 parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers : ^[dynamic]StructOrUnionMember) {
@@ -309,7 +309,7 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
     token := peek_token(data);
     for token != "}" {
         member : StructOrUnionMember;
-        member.kind = parse_type(data);
+        member.type = parse_type(data);
         member.name = parse_identifier(data);
 
         token = peek_token(data);
@@ -347,7 +347,7 @@ parse_function_parameters :: proc(data : ^ParserData, parameters : ^[dynamic]Fun
     token := peek_token(data);
     for token != ")" {
         parameter : FunctionParameter;
-        parameter.kind = parse_type(data);
+        parameter.type = parse_type(data);
 
         // Check if named parameter
         token = peek_token(data);

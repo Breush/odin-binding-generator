@@ -116,21 +116,21 @@ export_struct_or_union_members :: proc(data : ^GeneratorData, members : [dynamic
         fmt.fprint(data.handle, "\n");
     }
     for member in members {
-        kind := clean_type(member.kind, data.options);
+        type := clean_type(member.type, data.options);
         name := clean_variable_name(member.name, data.options);
         fmt.fprint(data.handle, "    ", name, " : ");
         if member.dimension > 0 {
             fmt.fprint(data.handle, "[", member.dimension, "]");
         }
-        fmt.fprint(data.handle, kind, ",\n");
+        fmt.fprint(data.handle, type, ",\n");
     }
 }
 
 export_function_parameters :: proc(data : ^GeneratorData, parameters : [dynamic]FunctionParameter, baseTab : string) {
     // Special case: function(void) does not really have a parameter
     if (len(parameters) == 1) &&
-       (parameters[0].kind.main == "void") &&
-       (parameters[0].kind.prefix == "" && parameters[0].kind.postfix == "") {
+       (parameters[0].type.main == "void") &&
+       (parameters[0].type.prefix == "" && parameters[0].type.postfix == "") {
         return;
     }
 
@@ -141,13 +141,13 @@ export_function_parameters :: proc(data : ^GeneratorData, parameters : [dynamic]
     }
 
     for parameter, i in parameters {
-        kind := clean_type(parameter.kind, data.options);
+        type := clean_type(parameter.type, data.options);
         name := len(parameter.name) != 0 ? clean_variable_name(parameter.name, data.options) : "---";
         fmt.fprint(data.handle, tab, name, " : ");
         if parameter.dimension > 0 {
             fmt.fprint(data.handle, "[", parameter.dimension, "]");
         }
-        fmt.fprint(data.handle, kind);
+        fmt.fprint(data.handle, type);
         if i != len(parameters) - 1 {
             fmt.fprint(data.handle, ",\n");
         }

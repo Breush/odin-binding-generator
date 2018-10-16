@@ -24,7 +24,7 @@ clean_identifier :: proc(name : string) -> string {
     }
 
     // Keywords clash
-    if name == "type" || name == "map" {
+    else if name == "map" {
         return fmt.tprint("_", name);
     }
 
@@ -83,9 +83,9 @@ clean_define_name :: proc(defineName : string, options : ^GeneratorOptions) -> s
 }
 
 // Convert to Odin's types
-clean_type :: proc(kind : Type, options : ^GeneratorOptions) -> string {
+clean_type :: proc(type : Type, options : ^GeneratorOptions) -> string {
     // If it matches the prefix, then it might be a struct.
-    main := kind.main;
+    main := type.main;
 
     if main == "int" { main = "i32"; }
     else if main == "char" { main = "u8"; }
@@ -107,7 +107,7 @@ clean_type :: proc(kind : Type, options : ^GeneratorOptions) -> string {
 
     // Check pointerness
     odinPrefix := "";
-    for character in kind.postfix {
+    for character in type.postfix {
         if character == '*' {
             if len(main) == 0 {
                 main = "rawptr";

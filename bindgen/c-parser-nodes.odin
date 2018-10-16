@@ -68,12 +68,12 @@ EnumMember :: struct {
 
 StructOrUnionMember :: struct {
     name : string,
-    kind : Type,      // @todo Too bad 'type' being a keyword in this language...
+    type : Type,
     dimension : u32,  // Array dimension (0 if not an array)
 }
 
 FunctionParameter :: struct {
     name : string,
-    kind : Type,
+    type : Type,
     dimension : u32,  // Array dimension (0 if not an array)
 }
