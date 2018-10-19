@@ -23,13 +23,13 @@ to get a `.odin` file that works with most of C libraries.
 import "bindgen"
 
 main :: proc {
-    generatorOptions : bindgen.GeneratorOptions;
+    options : bindgen.GeneratorOptions;
     bindgen.generate(
-        packageName="vk",
-        foreignLibrary="system:vulkan",
-        outputFile="vulkan.odin",
-        headerFiles=[]string{"./vulkan.h"},
-        generatorOptions,
+        packageName = "vk",
+        foreignLibrary = "system:vulkan",
+        outputFile = "vulkan.odin",
+        headerFiles = []string{"./vulkan.h"},
+        options = options,
     );
 }
 ```

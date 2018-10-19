@@ -7,3 +7,5 @@
 *.so
 *.so.*
 main
+generate
+test
