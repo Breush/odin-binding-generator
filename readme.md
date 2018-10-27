@@ -22,7 +22,7 @@ to get a `.odin` file that works with most of C libraries.
 ```go
 import "bindgen"
 
-main :: proc {
+main :: proc() {
     options : bindgen.GeneratorOptions;
     bindgen.generate(
         packageName = "vk",
