@@ -83,10 +83,10 @@ clean_define_name :: proc(defineName : string, options : ^GeneratorOptions) -> s
 }
 
 // Convert to Odin's types
-clean_type :: proc(type : GenericType, options : ^GeneratorOptions) -> string {
-    if _type, ok := type.(Type); ok {
+clean_type :: proc(type : Type, options : ^GeneratorOptions) -> string {
+    if _type, ok := type.(BasicType); ok {
         // If it matches the prefix, then it might be a struct.
-        main := type.(Type).main;
+        main := type.(BasicType).main;
 
         if main == "int" { main = "i32"; }
         else if main == "char" { main = "u8"; }
@@ -108,7 +108,7 @@ clean_type :: proc(type : GenericType, options : ^GeneratorOptions) -> string {
 
         // Check pointerness
         odinPrefix := "";
-        for character in type.(Type).postfix {
+        for character in type.(BasicType).postfix {
             if character == '*' {
                 if len(main) == 0 {
                     main = "rawptr";
@@ -142,8 +142,8 @@ clean_function_parameters :: proc(parameters : [dynamic]FunctionParameter, optio
 
     // Special case: function(void) does not really have a parameter
     if (len(parameters) == 1) &&
-       (parameters[0].type.(Type).main == "void") &&
-       (parameters[0].type.(Type).prefix == "" && parameters[0].type.(Type).postfix == "") {
+       (parameters[0].type.(BasicType).main == "void") &&
+       (parameters[0].type.(BasicType).prefix == "" && parameters[0].type.(BasicType).postfix == "") {
         return "";
     }
 

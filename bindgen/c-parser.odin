@@ -87,9 +87,9 @@ parse_identifier :: proc(data : ^ParserData) -> string {
     return parse_any(data);
 }
 
-parse_type :: proc(data : ^ParserData) -> GenericType {
+parse_type :: proc(data : ^ParserData) -> Type {
     // We start by parsing a type
-    type : Type;
+    type : BasicType;
 
     startOffset := data.offset;
     eat_type_specifiers(data);

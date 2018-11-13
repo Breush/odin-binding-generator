@@ -22,13 +22,13 @@ EnumDefinitionNode :: struct {
 
 FunctionDeclarationNode :: struct {
     name : string,
-    returnType : GenericType,
+    returnType : Type,
     parameters : [dynamic]FunctionParameter,
 }
 
 TypeAliasNode :: struct {
     name : string,
-    sourceType : GenericType,
+    sourceType : Type,
 }
 
 Nodes :: struct {
@@ -47,8 +47,7 @@ LiteralValue :: union {
 }
 
 // const char* -> prefix="const" main="char" postfix="*"
-// @fixme TYPE This should be renamed BasicType and GenericType -> Type
-Type :: struct {
+BasicType :: struct {
     prefix : string,
     main : string,
     postfix : string,
@@ -56,12 +55,12 @@ Type :: struct {
 
 FunctionPointerType :: struct {
     name : string,
-    returnType : Type,
+    returnType : BasicType,
     parameters : [dynamic]FunctionParameter,
 }
 
-GenericType :: union {
-    Type,
+Type :: union {
+    BasicType,
     FunctionPointerType,
 }
 
@@ -73,12 +72,12 @@ EnumMember :: struct {
 
 StructOrUnionMember :: struct {
     name : string,
-    type : GenericType,
+    type : Type,
     dimensions : [dynamic]u64,  // Array dimensions
 }
 
 FunctionParameter :: struct {
     name : string,
-    type : GenericType,
+    type : Type,
     dimensions : [dynamic]u64,  // Array dimensions
 }
