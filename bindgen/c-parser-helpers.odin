@@ -187,7 +187,10 @@ eat_token :: proc(data : ^ParserData) {
 
 eat_type_specifiers :: proc(data : ^ParserData) {
     token := peek_token(data);
-    for token == "*" || token == "const" || token == "unsigned" || token == "struct" {
+    for token == "*" || token == "const" ||
+        token == "unsigned" || token == "signed" ||
+        token == "long" || token == "short" ||
+        token == "struct" {
         data.offset += cast(u32) len(token);
         token = peek_token(data);
     }

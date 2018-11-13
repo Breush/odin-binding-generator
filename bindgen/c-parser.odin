@@ -58,6 +58,10 @@ parse :: proc(bytes : []u8, options : ParserOptions) -> Nodes {
         else if token == "typedef" {
             parse_typedef(&data);
         }
+        else if token == "struct" {
+            parse_struct(&data);
+            check_and_eat_token(&data, ";");
+        }
         else if (token[0] >= 'a' && token[0] <= 'z') ||
                 (token[0] >= 'A' && token[0] <= 'Z') {
             parse_function_declaration(&data);
@@ -91,6 +95,7 @@ parse_type :: proc(data : ^ParserData) -> Type {
     type.prefix = extract_string(data, startOffset, data.offset);
 
     startOffset = data.offset;
+    // @todo Check that the token is not "empty"
     eat_token(data);
     type.main = extract_string(data, startOffset, data.offset);
 
@@ -174,23 +179,8 @@ parse_typedef :: proc(data : ^ParserData) {
     // Struct aliasing
     token := peek_token(data);
     if token == "struct" {
-        node : StructDefinitionNode;
-        check_and_eat_token(data, "struct");
-
-        // Check if optional name
-        token = peek_token(data);
-        if token != "{" {
-            eat_token(data); // <name>?
-            token = peek_token(data);
-        }
-
-        // Check if definition
-        if token == "{" {
-            parse_struct_or_union_members(data, &node.members);
-        }
-
+        node := parse_struct(data);
         node.name = parse_identifier(data);
-        append(&data.nodes.structDefinitions, node);
     }
     // Enum aliasing
     else if token == "enum" {
@@ -207,6 +197,7 @@ parse_typedef :: proc(data : ^ParserData) {
         parse_enum_members(data, &node.members);
 
         node.name = parse_identifier(data);
+        fmt.print("-> enum ", node.name, "\n");
         append(&data.nodes.enumDefinitions, node);
     }
     // Union aliasing
@@ -224,6 +215,7 @@ parse_typedef :: proc(data : ^ParserData) {
         parse_struct_or_union_members(data, &node.members);
 
         node.name = parse_identifier(data);
+        fmt.print("-> union ", node.name, "\n");
         append(&data.nodes.unionDefinitions, node);
     }
     // Type aliasing
@@ -254,6 +246,29 @@ parse_typedef :: proc(data : ^ParserData) {
     check_and_eat_token(data, ";");
 }
 
+parse_struct :: proc(data : ^ParserData) -> ^StructDefinitionNode {
+    check_and_eat_token(data, "struct");
+
+    node : StructDefinitionNode;
+
+    // Check if optional name (optional only within typedef, but we don't know here)
+    token := peek_token(data);
+    if token != "{" {
+        node.name = parse_identifier(data);
+        token = peek_token(data);
+    }
+
+    // Check if definition
+    if token == "{" {
+        parse_struct_or_union_members(data, &node.members);
+    }
+
+    fmt.print("-> struct ", node.name, "\n");
+    append(&data.nodes.structDefinitions, node);
+
+    return &data.nodes.structDefinitions[len(data.nodes.structDefinitions) - 1];
+}
+
 /**
  *  {
  *      <name> = <value>,
@@ -263,6 +278,7 @@ parse_typedef :: proc(data : ^ParserData) {
 parse_enum_members :: proc(data : ^ParserData, members : ^[dynamic]EnumMember) {
     check_and_eat_token(data, "{");
 
+    nextMemberValue : i64 = 0;
     token := peek_token(data);
     for token != "}" {
         member : EnumMember;
@@ -275,9 +291,14 @@ parse_enum_members :: proc(data : ^ParserData, members : ^[dynamic]EnumMember) {
 
             member.hasValue = true;
             member.value = evaluate_i64(data);
-            data.knownedLiterals[member.name] = member.value;
+            nextMemberValue = member.value;
             token = peek_token(data);
+        } else {
+            member.value = nextMemberValue;
         }
+
+        data.knownedLiterals[member.name] = member.value;
+        nextMemberValue += 1;
 
         // Eat until end, as this might be a complex expression that we couldn't understand
         if token != "," && token != "}" {
@@ -288,7 +309,8 @@ parse_enum_members :: proc(data : ^ParserData, members : ^[dynamic]EnumMember) {
             }
         }
         if token == "," {
-            eat_token(data);
+            check_and_eat_token(data, ",");
+            token = peek_token(data);
         }
 
         append(members, member);
@@ -317,6 +339,13 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
             check_and_eat_token(data, "[");
             member.dimension = cast(u32) strconv.parse_u64(parse_identifier(data));
             check_and_eat_token(data, "]");
+            token = peek_token(data);
+        }
+
+        if token == ":" {
+            check_and_eat_token(data, ":");
+            fmt.print("[bindgen] Warning: Found bitfield in struct, which are not handled correctly.\n");
+            evaluate_i64(data);
             token = peek_token(data);
         }
 
