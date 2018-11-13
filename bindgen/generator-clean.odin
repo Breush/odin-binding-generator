@@ -157,8 +157,8 @@ clean_function_parameters :: proc(parameters : [dynamic]FunctionParameter, optio
         type := clean_type(parameter.type, options);
         name := len(parameter.name) != 0 ? clean_variable_name(parameter.name, options) : "---";
         output = fmt.tprint(output, tab, name, " : ");
-        if parameter.dimension > 0 {
-            output = fmt.tprint(output, "[", parameter.dimension, "]");
+        for dimension in parameter.dimensions {
+            output = fmt.tprint(output, "[", dimension, "]");
         }
         output = fmt.tprint(output, type);
         if i != len(parameters) - 1 {

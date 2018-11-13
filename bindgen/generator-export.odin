@@ -109,8 +109,8 @@ export_struct_or_union_members :: proc(data : ^GeneratorData, members : [dynamic
         type := clean_type(member.type, data.options);
         name := clean_variable_name(member.name, data.options);
         fmt.fprint(data.handle, "    ", name, " : ");
-        if member.dimension > 0 {
-            fmt.fprint(data.handle, "[", member.dimension, "]");
+        for dimension in member.dimensions {
+            fmt.fprint(data.handle, "[", dimension, "]");
         }
         fmt.fprint(data.handle, type, ",\n");
     }

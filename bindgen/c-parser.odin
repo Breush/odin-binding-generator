@@ -347,9 +347,9 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
         }
 
         token = peek_token(data);
-        if token == "[" {
+        for token == "[" {
             check_and_eat_token(data, "[");
-            member.dimension = cast(u32) strconv.parse_u64(parse_identifier(data));
+            append(&member.dimensions, strconv.parse_u64(parse_identifier(data)));
             check_and_eat_token(data, "]");
             token = peek_token(data);
         }
@@ -398,9 +398,9 @@ parse_function_parameters :: proc(data : ^ParserData, parameters : ^[dynamic]Fun
 
             // Check if array dimension
             token = peek_token(data);
-            if token == "[" {
+            for token == "[" {
                 check_and_eat_token(data, "[");
-                parameter.dimension = cast(u32) strconv.parse_u64(parse_identifier(data));
+                append(&parameter.dimensions, strconv.parse_u64(parse_identifier(data)));
                 check_and_eat_token(data, "]");
                 token = peek_token(data);
             }

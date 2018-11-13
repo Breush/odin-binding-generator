@@ -47,6 +47,7 @@ LiteralValue :: union {
 }
 
 // const char* -> prefix="const" main="char" postfix="*"
+// @fixme TYPE This should be renamed BasicType and GenericType -> Type
 Type :: struct {
     prefix : string,
     main : string,
@@ -73,11 +74,11 @@ EnumMember :: struct {
 StructOrUnionMember :: struct {
     name : string,
     type : GenericType,
-    dimension : u32,  // Array dimension (0 if not an array)
+    dimensions : [dynamic]u64,  // Array dimensions
 }
 
 FunctionParameter :: struct {
     name : string,
     type : GenericType,
-    dimension : u32,  // Array dimension (0 if not an array)
+    dimensions : [dynamic]u64,  // Array dimensions
 }
