@@ -352,6 +352,12 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
             fmt.println("UNION found");
             unionNode := parse_union(data);
             // @fixme EMBED Add the node as an element.
+
+            // Union might be named
+            token = peek_token(data);
+            if token != "," && token != ";" && token != "}" {
+                member.name = parse_identifier(data);
+            }
         }
         // Embedded union
         else if token == "struct" {
@@ -443,7 +449,12 @@ parse_function_parameters :: proc(data : ^ParserData, parameters : ^[dynamic]Fun
             token = peek_token(data);
             for token == "[" {
                 check_and_eat_token(data, "[");
-                append(&parameter.dimensions, strconv.parse_u64(parse_identifier(data)));
+                token = peek_token(data);
+                if token != "]" {
+                    dimension := evaluate_i64(data);
+                    append(&parameter.dimensions, cast(u64) dimension);
+                }
+                // @fixme Currently ignoring empty [], but shouldn't
                 check_and_eat_token(data, "]");
                 token = peek_token(data);
             }
