@@ -1,11 +1,3 @@
-# 1 "<stdin>"
-# 1 "<built-in>"
-# 1 "<command-line>"
-# 31 "<command-line>"
-# 1 "/usr/include/stdc-predef.h" 1 3 4
-# 32 "<command-line>" 2
-# 1 "<stdin>"
-# 332 "<stdin>"
 typedef int8_t mal_int8;
 typedef uint8_t mal_uint8;
 typedef int16_t mal_int16;
@@ -24,14 +16,11 @@ typedef mal_uint32 mal_bool32;
 typedef void* mal_handle;
 typedef void* mal_ptr;
 typedef void (* mal_proc)(void);
-# 405 "<stdin>"
 typedef struct mal_context mal_context;
 typedef struct mal_device mal_device;
 
 typedef mal_uint8 mal_channel;
-# 465 "<stdin>"
 typedef int mal_result;
-# 531 "<stdin>"
 typedef enum
 {
     mal_stream_format_pcm = 0,
@@ -276,12 +265,10 @@ struct __attribute__((aligned(64))) mal_dsp
     mal_bool32 isChannelRoutingAtStart : 1;
     mal_bool32 isPassthrough : 1;
 };
-# 795 "<stdin>"
 void mal_get_standard_channel_map(mal_standard_channel_map standardChannelMap, mal_uint32 channels, mal_channel channelMap[32]);
 
 
 void mal_channel_map_copy(mal_channel* pOut, const mal_channel* pIn, mal_uint32 channels);
-# 809 "<stdin>"
 mal_bool32 mal_channel_map_valid(mal_uint32 channels, const mal_channel channelMap[32]);
 
 
@@ -294,7 +281,6 @@ mal_bool32 mal_channel_map_blank(mal_uint32 channels, const mal_channel channelM
 
 
 mal_bool32 mal_channel_map_contains_channel_position(mal_uint32 channels, const mal_channel channelMap[32], mal_channel channelPosition);
-# 863 "<stdin>"
 mal_result mal_format_converter_init(const mal_format_converter_config* pConfig, mal_format_converter* pConverter);
 
 
@@ -308,7 +294,6 @@ mal_uint64 mal_format_converter_read_deinterleaved(mal_format_converter* pConver
 mal_format_converter_config mal_format_converter_config_init_new(void);
 mal_format_converter_config mal_format_converter_config_init(mal_format formatIn, mal_format formatOut, mal_uint32 channels, mal_format_converter_read_proc onRead, void* pUserData);
 mal_format_converter_config mal_format_converter_config_init_deinterleaved(mal_format formatIn, mal_format formatOut, mal_uint32 channels, mal_format_converter_read_deinterleaved_proc onReadDeinterleaved, void* pUserData);
-# 944 "<stdin>"
 mal_result mal_channel_router_init(const mal_channel_router_config* pConfig, mal_channel_router* pRouter);
 
 
@@ -316,7 +301,6 @@ mal_uint64 mal_channel_router_read_deinterleaved(mal_channel_router* pRouter, ma
 
 
 mal_channel_router_config mal_channel_router_config_init(mal_uint32 channelsIn, const mal_channel channelMapIn[32], mal_uint32 channelsOut, const mal_channel channelMapOut[32], mal_channel_mix_mode mixingMode, mal_channel_router_read_deinterleaved_proc onRead, void* pUserData);
-# 961 "<stdin>"
 mal_result mal_src_init(const mal_src_config* pConfig, mal_src* pSRC);
 
 
@@ -347,7 +331,6 @@ mal_uint64 mal_src_read_deinterleaved(mal_src* pSRC, mal_uint64 frameCount, void
 
 mal_src_config mal_src_config_init_new(void);
 mal_src_config mal_src_config_init(mal_uint32 sampleRateIn, mal_uint32 sampleRateOut, mal_uint32 channels, mal_src_read_deinterleaved_proc onReadDeinterleaved, void* pUserData);
-# 1000 "<stdin>"
 mal_result mal_dsp_init(const mal_dsp_config* pConfig, mal_dsp* pDSP);
 
 
@@ -356,7 +339,6 @@ mal_result mal_dsp_init(const mal_dsp_config* pConfig, mal_dsp* pDSP);
 
 
 mal_result mal_dsp_set_input_sample_rate(mal_dsp* pDSP, mal_uint32 sampleRateOut);
-# 1017 "<stdin>"
 mal_result mal_dsp_set_output_sample_rate(mal_dsp* pDSP, mal_uint32 sampleRateOut);
 
 
@@ -375,10 +357,8 @@ mal_uint64 mal_dsp_read(mal_dsp* pDSP, mal_uint64 frameCount, void* pFramesOut, 
 mal_dsp_config mal_dsp_config_init_new(void);
 mal_dsp_config mal_dsp_config_init(mal_format formatIn, mal_uint32 channelsIn, mal_uint32 sampleRateIn, mal_format formatOut, mal_uint32 channelsOut, mal_uint32 sampleRateOut, mal_dsp_read_proc onRead, void* pUserData);
 mal_dsp_config mal_dsp_config_init_ex(mal_format formatIn, mal_uint32 channelsIn, mal_uint32 sampleRateIn, mal_channel channelMapIn[32], mal_format formatOut, mal_uint32 channelsOut, mal_uint32 sampleRateOut, mal_channel channelMapOut[32], mal_dsp_read_proc onRead, void* pUserData);
-# 1043 "<stdin>"
 mal_uint64 mal_convert_frames(void* pOut, mal_format formatOut, mal_uint32 channelsOut, mal_uint32 sampleRateOut, const void* pIn, mal_format formatIn, mal_uint32 channelsIn, mal_uint32 sampleRateIn, mal_uint64 frameCountIn);
 mal_uint64 mal_convert_frames_ex(void* pOut, mal_format formatOut, mal_uint32 channelsOut, mal_uint32 sampleRateOut, mal_channel channelMapOut[32], const void* pIn, mal_format formatIn, mal_uint32 channelsIn, mal_uint32 sampleRateIn, mal_channel channelMapIn[32], mal_uint64 frameCountIn);
-# 1055 "<stdin>"
 void* mal_malloc(size_t sz);
 
 
@@ -435,7 +415,6 @@ void mal_pcm_f32_to_s16(void* pOut, const void* pIn, mal_uint64 count, mal_dithe
 void mal_pcm_f32_to_s24(void* pOut, const void* pIn, mal_uint64 count, mal_dither_mode ditherMode);
 void mal_pcm_f32_to_s32(void* pOut, const void* pIn, mal_uint64 count, mal_dither_mode ditherMode);
 void mal_pcm_convert(void* pOut, mal_format formatOut, const void* pIn, mal_format formatIn, mal_uint64 sampleCount, mal_dither_mode ditherMode);
-# 1224 "<stdin>"
 typedef enum
 {
     mal_backend_null,
@@ -561,7 +540,6 @@ typedef enum
 
 typedef union
 {
-# 1359 "<stdin>"
     char alsa[256];
 
 
@@ -569,7 +547,6 @@ typedef union
 
 
     int jack;
-# 1383 "<stdin>"
     char openal[256];
 
 
@@ -683,7 +660,6 @@ struct mal_context
 
     union
     {
-# 1536 "<stdin>"
         struct
         {
             mal_handle asoundSO;
@@ -809,7 +785,6 @@ struct mal_context
             mal_proc jack_port_get_buffer;
             mal_proc jack_free;
         } jack;
-# 1730 "<stdin>"
         struct
         {
                         mal_handle hOpenAL;
@@ -924,7 +899,6 @@ struct mal_context
 
     union
     {
-# 1866 "<stdin>"
         struct
         {
             mal_handle pthreadSO;
@@ -992,7 +966,6 @@ struct __attribute__((aligned(64))) mal_device
 
     union
     {
-# 1977 "<stdin>"
         struct
         {
                            mal_ptr pPCM;
@@ -1020,7 +993,6 @@ struct __attribute__((aligned(64))) mal_device
                              mal_ptr pPorts[32];
             float* pIntermediaryBuffer;
         } jack;
-# 2058 "<stdin>"
         struct
         {
                             mal_ptr pContextALC;
@@ -1051,17 +1023,11 @@ struct __attribute__((aligned(64))) mal_device
 
     };
 };
-# 2127 "<stdin>"
 mal_result mal_context_init(const mal_backend backends[], mal_uint32 backendCount, const mal_context_config* pConfig, mal_context* pContext);
-# 2137 "<stdin>"
 mal_result mal_context_uninit(mal_context* pContext);
-# 2167 "<stdin>"
 mal_result mal_context_enumerate_devices(mal_context* pContext, mal_enum_devices_callback_proc callback, void* pUserData);
-# 2188 "<stdin>"
 mal_result mal_context_get_devices(mal_context* pContext, mal_device_info** ppPlaybackDeviceInfos, mal_uint32* pPlaybackDeviceCount, mal_device_info** ppCaptureDeviceInfos, mal_uint32* pCaptureDeviceCount);
-# 2208 "<stdin>"
 mal_result mal_context_get_device_info(mal_context* pContext, mal_device_type type, const mal_device_id* pDeviceID, mal_share_mode shareMode, mal_device_info* pDeviceInfo);
-# 2261 "<stdin>"
 mal_result mal_device_init(mal_context* pContext, mal_device_type type, mal_device_id* pDeviceID, const mal_device_config* pConfig, void* pUserData, mal_device* pDevice);
 
 
@@ -1069,7 +1035,6 @@ mal_result mal_device_init(mal_context* pContext, mal_device_type type, mal_devi
 
 
 mal_result mal_device_init_ex(const mal_backend backends[], mal_uint32 backendCount, const mal_context_config* pContextConfig, mal_device_type type, mal_device_id* pDeviceID, const mal_device_config* pConfig, void* pUserData, mal_device* pDevice);
-# 2280 "<stdin>"
 void mal_device_uninit(mal_device* pDevice);
 
 
@@ -1079,7 +1044,6 @@ void mal_device_uninit(mal_device* pDevice);
 
 
 void mal_device_set_recv_callback(mal_device* pDevice, mal_recv_proc proc);
-# 2300 "<stdin>"
 void mal_device_set_send_callback(mal_device* pDevice, mal_send_proc proc);
 
 
@@ -1087,11 +1051,8 @@ void mal_device_set_send_callback(mal_device* pDevice, mal_send_proc proc);
 
 
 void mal_device_set_stop_callback(mal_device* pDevice, mal_stop_proc proc);
-# 2341 "<stdin>"
 mal_result mal_device_start(mal_device* pDevice);
-# 2369 "<stdin>"
 mal_result mal_device_stop(mal_device* pDevice);
-# 2381 "<stdin>"
 mal_bool32 mal_device_is_started(mal_device* pDevice);
 
 
@@ -1105,11 +1066,9 @@ mal_uint32 mal_device_get_buffer_size_in_bytes(mal_device* pDevice);
 
 
 mal_context_config mal_context_config_init(mal_log_proc onLog);
-# 2404 "<stdin>"
 mal_device_config mal_device_config_init_default(void);
 mal_device_config mal_device_config_init_default_capture(mal_recv_proc onRecvCallback);
 mal_device_config mal_device_config_init_default_playback(mal_send_proc onSendCallback);
-# 2471 "<stdin>"
 mal_device_config mal_device_config_init_ex(mal_format format, mal_uint32 channels, mal_uint32 sampleRate, mal_channel channelMap[32], mal_recv_proc onRecvCallback, mal_send_proc onSendCallback);
 
 
@@ -1122,7 +1081,6 @@ static inline __attribute__((always_inline)) mal_device_config mal_device_config
 
 static inline __attribute__((always_inline)) mal_device_config mal_device_config_init_playback_ex(mal_format format, mal_uint32 channels, mal_uint32 sampleRate, mal_channel channelMap[32], mal_send_proc onSendCallback) { return mal_device_config_init_ex(format, channels, sampleRate, channelMap, 0, onSendCallback); }
 static inline __attribute__((always_inline)) mal_device_config mal_device_config_init_playback(mal_format format, mal_uint32 channels, mal_uint32 sampleRate, mal_send_proc onSendCallback) { return mal_device_config_init_playback_ex(format, channels, sampleRate, 0, onSendCallback); }
-# 2495 "<stdin>"
 mal_result mal_mutex_init(mal_context* pContext, mal_mutex* pMutex);
 
 
@@ -1154,7 +1112,6 @@ mal_uint32 mal_get_default_buffer_size_in_milliseconds(mal_performance_profile p
 
 
 mal_uint32 mal_get_default_buffer_size_in_frames(mal_performance_profile performanceProfile, mal_uint32 sampleRate);
-# 2539 "<stdin>"
 typedef struct mal_decoder mal_decoder;
 
 typedef enum
@@ -1241,7 +1198,6 @@ mal_result mal_decoder_seek_to_frame(mal_decoder* pDecoder, mal_uint64 frameInde
 mal_result mal_decode_file(const char* pFilePath, mal_decoder_config* pConfig, mal_uint64* pFrameCountOut, void** ppDataOut);
 
 mal_result mal_decode_memory(const void* pData, size_t dataSize, mal_decoder_config* pConfig, mal_uint64* pFrameCountOut, void** ppDataOut);
-# 2635 "<stdin>"
 typedef struct
 {
     double amplitude;

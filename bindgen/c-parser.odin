@@ -217,20 +217,8 @@ parse_typedef :: proc(data : ^ParserData) {
     }
     // Union aliasing
     else if token == "union" {
-        node : UnionDefinitionNode;
-        check_and_eat_token(data, "union");
-
-        // Check if optional name
-        token = peek_token(data);
-        if token != "{" {
-            eat_token(data); // <name>?
-        }
-
-        // Parse definition
-        parse_struct_or_union_members(data, &node.members);
-
+        node := parse_union(data);
         node.name = parse_identifier(data);
-        append(&data.nodes.unionDefinitions, node);
     }
     // Type aliasing
     else {
@@ -256,7 +244,7 @@ parse_struct :: proc(data : ^ParserData) -> ^StructDefinitionNode {
 
     node : StructDefinitionNode;
 
-    // Check if optional name (optional only within typedef, but we don't know here)
+    // Check if optional name
     token := peek_token(data);
     if token != "{" {
         node.name = parse_identifier(data);
@@ -271,6 +259,26 @@ parse_struct :: proc(data : ^ParserData) -> ^StructDefinitionNode {
     append(&data.nodes.structDefinitions, node);
 
     return &data.nodes.structDefinitions[len(data.nodes.structDefinitions) - 1];
+}
+
+parse_union :: proc(data : ^ParserData) -> ^UnionDefinitionNode {
+    check_and_eat_token(data, "union");
+
+    node : UnionDefinitionNode;
+
+    // Check if optional name
+    token := peek_token(data);
+    if token != "{" {
+        node.name = parse_identifier(data);
+        token = peek_token(data);
+    }
+
+    // Parse definition
+    parse_struct_or_union_members(data, &node.members);
+
+    append(&data.nodes.unionDefinitions, node);
+
+    return &data.nodes.unionDefinitions[len(data.nodes.unionDefinitions) - 1];
 }
 
 /**
@@ -332,36 +340,57 @@ parse_enum_members :: proc(data : ^ParserData, members : ^[dynamic]EnumMember) {
 parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers : ^[dynamic]StructOrUnionMember) {
     check_and_eat_token(data, "{");
 
+    // To ensure unique id
+    embeddedCount := 0;
+
     token := peek_token(data);
     for token != "}" {
         member : StructOrUnionMember;
-        member.type = parse_type(data);
 
-        // In the case of function pointer types, the name has been parsed
-        // during type inspection.
-        if type, ok := member.type.(FunctionPointerType); ok {
-            member.name = type.name;
+        // Embedded union
+        if token == "union" {
+            fmt.println("UNION found");
+            unionNode := parse_union(data);
+            // @fixme EMBED Add the node as an element.
+        }
+        // Embedded union
+        else if token == "struct" {
+            fmt.println("STRUCT found");
+            structNode := parse_struct(data);
+            member.name = parse_identifier(data);
+            // @fixme EMBED Add the node as an element.
         }
         else {
-            member.name = parse_identifier(data);
-        }
+            member.type = parse_type(data);
 
-        token = peek_token(data);
-        for token == "[" {
-            check_and_eat_token(data, "[");
-            append(&member.dimensions, strconv.parse_u64(parse_identifier(data)));
-            check_and_eat_token(data, "]");
+            // In the case of function pointer types, the name has been parsed
+            // during type inspection.
+            if type, ok := member.type.(FunctionPointerType); ok {
+                member.name = type.name;
+            }
+            else {
+                member.name = parse_identifier(data);
+            }
+
             token = peek_token(data);
+            for token == "[" {
+                check_and_eat_token(data, "[");
+                dimension := evaluate_i64(data);
+                append(&member.dimensions, cast(u64) dimension);
+                check_and_eat_token(data, "]");
+                token = peek_token(data);
+            }
+
+            if token == ":" {
+                check_and_eat_token(data, ":");
+                fmt.print("[bindgen] Warning: Found bitfield in struct, which are not handled correctly.\n");
+                evaluate_i64(data);
+                token = peek_token(data);
+            }
+
+            append(structOrUnionMembers, member);
         }
 
-        if token == ":" {
-            check_and_eat_token(data, ":");
-            fmt.print("[bindgen] Warning: Found bitfield in struct, which are not handled correctly.\n");
-            evaluate_i64(data);
-            token = peek_token(data);
-        }
-
-        append(structOrUnionMembers, member);
         check_and_eat_token(data, ";");
         token = peek_token(data);
     }
@@ -376,8 +405,22 @@ parse_function_declaration :: proc(data : ^ParserData) {
     node.name = parse_identifier(data);
     parse_function_parameters(data, &node.parameters);
 
-    // @note We do not expect function definition.
-    check_and_eat_token(data, ";");
+    // Function definition? Ignore it.
+    token := peek_token(data);
+    if token == "{" {
+        bracesCount := 1;
+        for true {
+            data.offset += 1;
+            if data.bytes[data.offset] == '{' do bracesCount += 1;
+            else if data.bytes[data.offset] == '}' do bracesCount -= 1;
+            if bracesCount == 0 do break;
+        }
+        data.offset += 1;
+    }
+    // Function declaration
+    else {
+        check_and_eat_token(data, ";");
+    }
 
     append(&data.nodes.functionDeclarations, node);
 }

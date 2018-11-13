@@ -46,7 +46,7 @@ but to test said bindings.*
 
 One way to prevent errors with C macros is to run the preprocessor first, like so:
 ```bash
-cat zlib.h | grep -v "#include " | gcc -E - -o zlib-preprocessed.h
+cat zlib.h | grep -v "#include " | gcc -E - -o - | grep -v "# " > zlib-preprocessed.h
 ```
 
 ### Generator options

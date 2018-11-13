@@ -88,17 +88,44 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
             offset += 1;
         }
 
-        // Ignore ignored tokens ;)
         token := extract_string(data, data.offset, offset);
-        foundIgnoredToken := false;
-        for ignoredToken in data.options.ignoredTokens {
-            if token == ignoredToken {
-                foundIgnoredToken = true;
-                data.offset = offset;
-                break;
+
+        // Ignore __attribute__
+        if token == "__attribute__" {
+            fmt.print_err("[bindgen] Warning: __attribute__ will be ignored.\n");
+
+            for data.bytes[offset] != '(' {
+                offset += 1;
+            }
+
+            parenthesesCount := 1;
+            for true {
+                offset += 1;
+                if data.bytes[offset] == '(' do parenthesesCount += 1;
+                else if data.bytes[offset] == ')' do parenthesesCount -= 1;
+                if parenthesesCount == 0 do break;
+            }
+            offset += 1;
+
+            data.offset = offset;
+        }
+
+        // Ignore certain keywords
+        else if (token == "inline" || token == "static") {
+            data.offset = offset;
+        }
+
+        // Ignore ignored tokens ;)
+        else {
+            for ignoredToken in data.options.ignoredTokens {
+                if token == ignoredToken {
+                    data.offset = offset;
+                    break;
+                }
             }
         }
-        if !foundIgnoredToken {
+
+        if data.offset != offset {
             break;
         }
     }
