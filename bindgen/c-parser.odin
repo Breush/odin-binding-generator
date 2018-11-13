@@ -87,7 +87,8 @@ parse_identifier :: proc(data : ^ParserData) -> string {
     return parse_any(data);
 }
 
-parse_type :: proc(data : ^ParserData) -> Type {
+parse_type :: proc(data : ^ParserData) -> GenericType {
+    // We start by parsing a type
     type : Type;
 
     startOffset := data.offset;
@@ -103,7 +104,22 @@ parse_type :: proc(data : ^ParserData) -> Type {
     eat_type_specifiers(data);
     type.postfix = extract_string(data, startOffset, data.offset);
 
-    return type;
+    // And if it seems to continue as a function pointer type, we proceed
+    token := peek_token(data);
+    if token != "(" do
+        return type;
+
+    functionPointerType : FunctionPointerType;
+    check_and_eat_token(data, "(");
+    check_and_eat_token(data, "*");
+
+    functionPointerType.returnType = type;
+    functionPointerType.name = parse_identifier(data);
+    check_and_eat_token(data, ")");
+
+    parse_function_parameters(data, &functionPointerType.parameters);
+
+    return functionPointerType;
 }
 
 /**
@@ -197,7 +213,6 @@ parse_typedef :: proc(data : ^ParserData) {
         parse_enum_members(data, &node.members);
 
         node.name = parse_identifier(data);
-        fmt.print("-> enum ", node.name, "\n");
         append(&data.nodes.enumDefinitions, node);
     }
     // Union aliasing
@@ -215,32 +230,22 @@ parse_typedef :: proc(data : ^ParserData) {
         parse_struct_or_union_members(data, &node.members);
 
         node.name = parse_identifier(data);
-        fmt.print("-> union ", node.name, "\n");
         append(&data.nodes.unionDefinitions, node);
     }
     // Type aliasing
     else {
-        sourceType := parse_type(data);
+        node : TypeAliasNode;
+        node.sourceType = parse_type(data);
 
-        // Check if function pointer alising
-        token = peek_token(data);
-        if token == "(" {
-            check_and_eat_token(data, "(");
-            check_and_eat_token(data, "*");
-
-            node : FunctionPointerTypeAliasNode;
-            node.returnType = sourceType;
-            node.name = parse_identifier(data);
-            check_and_eat_token(data, ")");
-
-            parse_function_parameters(data, &node.parameters);
-            append(&data.nodes.functionPointerTypeAliases, node);
-        } else {
-            node : TypeAliasNode;
-            node.sourceType = sourceType;
-            node.name = parse_identifier(data);
-            append(&data.nodes.typeAliases, node);
+        // In the case of function pointer types, the name has been parsed
+        // during type inspection.
+        if sourceType, ok := node.sourceType.(FunctionPointerType); ok {
+            node.name = sourceType.name;
         }
+        else {
+            node.name = parse_identifier(data);
+        }
+        append(&data.nodes.typeAliases, node);
     }
 
     check_and_eat_token(data, ";");
@@ -263,7 +268,6 @@ parse_struct :: proc(data : ^ParserData) -> ^StructDefinitionNode {
         parse_struct_or_union_members(data, &node.members);
     }
 
-    fmt.print("-> struct ", node.name, "\n");
     append(&data.nodes.structDefinitions, node);
 
     return &data.nodes.structDefinitions[len(data.nodes.structDefinitions) - 1];
@@ -332,7 +336,15 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
     for token != "}" {
         member : StructOrUnionMember;
         member.type = parse_type(data);
-        member.name = parse_identifier(data);
+
+        // In the case of function pointer types, the name has been parsed
+        // during type inspection.
+        if type, ok := member.type.(FunctionPointerType); ok {
+            member.name = type.name;
+        }
+        else {
+            member.name = parse_identifier(data);
+        }
 
         token = peek_token(data);
         if token == "[" {

@@ -22,19 +22,13 @@ EnumDefinitionNode :: struct {
 
 FunctionDeclarationNode :: struct {
     name : string,
-    returnType : Type,
+    returnType : GenericType,
     parameters : [dynamic]FunctionParameter,
 }
 
 TypeAliasNode :: struct {
     name : string,
-    sourceType : Type,
-}
-
-FunctionPointerTypeAliasNode :: struct {
-    name : string,
-    returnType : Type,
-    parameters : [dynamic]FunctionParameter,
+    sourceType : GenericType,
 }
 
 Nodes :: struct {
@@ -44,7 +38,6 @@ Nodes :: struct {
     structDefinitions : [dynamic]StructDefinitionNode,
     functionDeclarations : [dynamic]FunctionDeclarationNode,
     typeAliases : [dynamic]TypeAliasNode,
-    functionPointerTypeAliases : [dynamic]FunctionPointerTypeAliasNode,
 }
 
 LiteralValue :: union {
@@ -60,6 +53,17 @@ Type :: struct {
     postfix : string,
 }
 
+FunctionPointerType :: struct {
+    name : string,
+    returnType : Type,
+    parameters : [dynamic]FunctionParameter,
+}
+
+GenericType :: union {
+    Type,
+    FunctionPointerType,
+}
+
 EnumMember :: struct {
     name : string,
     value : i64,
@@ -68,12 +72,12 @@ EnumMember :: struct {
 
 StructOrUnionMember :: struct {
     name : string,
-    type : Type,
+    type : GenericType,
     dimension : u32,  // Array dimension (0 if not an array)
 }
 
 FunctionParameter :: struct {
     name : string,
-    type : Type,
+    type : GenericType,
     dimension : u32,  // Array dimension (0 if not an array)
 }

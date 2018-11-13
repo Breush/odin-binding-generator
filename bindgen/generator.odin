@@ -93,13 +93,11 @@ generate :: proc(
         merge_nodes(&data.nodes.structDefinitions, &headerNodes.structDefinitions);
         merge_nodes(&data.nodes.functionDeclarations, &headerNodes.functionDeclarations);
         merge_nodes(&data.nodes.typeAliases, &headerNodes.typeAliases);
-        merge_nodes(&data.nodes.functionPointerTypeAliases, &headerNodes.functionPointerTypeAliases);
     }
 
     // Exporting
     export_defines(&data);
     export_type_aliases(&data);
-    export_function_pointer_type_aliases(&data);
     export_enums(&data);
     export_structs(&data);
     export_unions(&data);

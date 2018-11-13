@@ -23,16 +23,6 @@ export_type_aliases :: proc(data : ^GeneratorData) {
     fmt.fprint(data.handle, "\n");
 }
 
-export_function_pointer_type_aliases :: proc(data : ^GeneratorData) {
-    for node in data.nodes.functionPointerTypeAliases {
-        aliasName := clean_pseudo_type_name(node.name, data.options);
-        fmt.fprint(data.handle, aliasName, " :: #type proc(");
-        export_function_parameters(data, node.parameters, "");
-        fmt.fprint(data.handle, ");\n");
-    }
-    fmt.fprint(data.handle, "\n");
-}
-
 export_enums :: proc(data : ^GeneratorData) {
     for node in data.nodes.enumDefinitions {
         enumName := clean_pseudo_type_name(node.name, data.options);
@@ -84,8 +74,8 @@ export_functions :: proc(data : ^GeneratorData) {
         functionName := clean_function_name(node.name, data.options);
         fmt.fprint(data.handle, "    @(link_name=\"", node.name, "\")\n");
         fmt.fprint(data.handle, "    ", functionName, " :: proc(");
-        export_function_parameters(data, node.parameters, "    ");
-        fmt.fprint(data.handle, ")");
+        parameters := clean_function_parameters(node.parameters, data.options, "    ");
+        fmt.fprint(data.handle, parameters, ")");
         returnType := clean_type(node.returnType, data.options);
         if len(returnType) > 0 {
             fmt.fprint(data.handle, " -> ", returnType);
@@ -123,37 +113,5 @@ export_struct_or_union_members :: proc(data : ^GeneratorData, members : [dynamic
             fmt.fprint(data.handle, "[", member.dimension, "]");
         }
         fmt.fprint(data.handle, type, ",\n");
-    }
-}
-
-export_function_parameters :: proc(data : ^GeneratorData, parameters : [dynamic]FunctionParameter, baseTab : string) {
-    // Special case: function(void) does not really have a parameter
-    if (len(parameters) == 1) &&
-       (parameters[0].type.main == "void") &&
-       (parameters[0].type.prefix == "" && parameters[0].type.postfix == "") {
-        return;
-    }
-
-    tab := "";
-    if (len(parameters) > 1) {
-        fmt.fprint(data.handle, "\n");
-        tab = fmt.tprint(baseTab, "    ");
-    }
-
-    for parameter, i in parameters {
-        type := clean_type(parameter.type, data.options);
-        name := len(parameter.name) != 0 ? clean_variable_name(parameter.name, data.options) : "---";
-        fmt.fprint(data.handle, tab, name, " : ");
-        if parameter.dimension > 0 {
-            fmt.fprint(data.handle, "[", parameter.dimension, "]");
-        }
-        fmt.fprint(data.handle, type);
-        if i != len(parameters) - 1 {
-            fmt.fprint(data.handle, ",\n");
-        }
-    }
-
-    if (len(parameters) > 1) {
-        fmt.fprint(data.handle, "\n", baseTab);
     }
 }
