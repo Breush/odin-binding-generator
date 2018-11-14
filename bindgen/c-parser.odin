@@ -5,6 +5,10 @@ import "core:fmt"
 import "core:strings"
 import "core:strconv"
 
+// Global counters
+embeddedUnionCount := 0;
+embeddedStructCount := 0;
+
 CustomHandler :: proc(data : ^ParserData);
 CustomExpressionHandler :: proc(data : ^ParserData) -> LiteralValue;
 
@@ -33,6 +37,9 @@ ParserData :: struct {
 }
 
 parse :: proc(bytes : []u8, options : ParserOptions) -> Nodes {
+    embeddedUnionCount = 0;
+    embeddedStructCount = 0;
+
     data : ParserData;
     data.bytes = bytes;
     data.bytesLength = cast(u32) len(bytes);
@@ -341,7 +348,7 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
     check_and_eat_token(data, "{");
 
     // To ensure unique id
-    embeddedCount := 0;
+    unamedCount := 0;
 
     token := peek_token(data);
     for token != "}" {
@@ -349,22 +356,35 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
 
         // Embedded union
         if token == "union" {
-            fmt.println("UNION found");
             unionNode := parse_union(data);
-            // @fixme EMBED Add the node as an element.
+            unionNode.name = fmt.tprint("EmbeddedUnion", embeddedUnionCount);
+            embeddedUnionCount += 1;
 
             // Union might be named
             token = peek_token(data);
             if token != "," && token != ";" && token != "}" {
                 member.name = parse_identifier(data);
             }
+            else {
+                member.name = fmt.tprint("unamed", unamedCount);
+                unamedCount += 1;
+            }
+
+            type : BasicType;
+            type.main = unionNode.name;
+            member.type = type;
         }
-        // Embedded union
+        // Embedded struct
         else if token == "struct" {
-            fmt.println("STRUCT found");
             structNode := parse_struct(data);
+            structNode.name = fmt.tprint("EmbeddedStruct", embeddedStructCount);
+            embeddedStructCount += 1;
+
             member.name = parse_identifier(data);
-            // @fixme EMBED Add the node as an element.
+
+            type : BasicType;
+            type.main = structNode.name;
+            member.type = type;
         }
         else {
             member.type = parse_type(data);
@@ -393,9 +413,9 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
                 evaluate_i64(data);
                 token = peek_token(data);
             }
-
-            append(structOrUnionMembers, member);
         }
+
+        append(structOrUnionMembers, member);
 
         check_and_eat_token(data, ";");
         token = peek_token(data);

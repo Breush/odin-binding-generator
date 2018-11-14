@@ -130,10 +130,10 @@ clean_type :: proc(type : Type, options : ^GeneratorOptions) -> string {
     else if _type, ok := type.(FunctionPointerType); ok {
         output := "#type proc(";
         parameters := clean_function_parameters(_type.parameters, options, "");
-        output = fmt.tprint(output, parameters, ");\n");
+        output = fmt.tprint(output, parameters, ")");
         return output;
     }
-    
+
     return "<niy>";
 }
 
