@@ -24,7 +24,7 @@ clean_identifier :: proc(name : string) -> string {
     }
 
     // Keywords clash
-    else if name == "map" {
+    else if name == "map" || name == "proc" {
         return fmt.tprint("_", name);
     }
 
@@ -83,7 +83,7 @@ clean_define_name :: proc(defineName : string, options : ^GeneratorOptions) -> s
 }
 
 // Convert to Odin's types
-clean_type :: proc(type : Type, options : ^GeneratorOptions) -> string {
+clean_type :: proc(type : Type, options : ^GeneratorOptions, baseTab : string = "") -> string {
     if _type, ok := type.(BasicType); ok {
         // If it matches the prefix, then it might be a struct.
         main := type.(BasicType).main;
@@ -129,7 +129,7 @@ clean_type :: proc(type : Type, options : ^GeneratorOptions) -> string {
     }
     else if _type, ok := type.(FunctionPointerType); ok {
         output := "#type proc(";
-        parameters := clean_function_parameters(_type.parameters, options, "");
+        parameters := clean_function_parameters(_type.parameters, options, baseTab);
         output = fmt.tprint(output, parameters, ")");
         return output;
     }

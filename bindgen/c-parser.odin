@@ -263,6 +263,22 @@ parse_struct :: proc(data : ^ParserData) -> ^StructDefinitionNode {
         parse_struct_or_union_members(data, &node.members);
     }
 
+    // @fixme Not our job to do that, let just add the both nodes
+    // and filter afterwards, before printing.
+    // Checking if the struct has already been declared
+    // for i := 0; i < len(data.nodes.structDefinitions); i += 1 {
+    //     structDefinition := data.nodes.structDefinitions[i];
+    //     if structDefinition.name == node.name {
+    //         if !foundDefinition {
+    //             fmt.print_err("[bindgen] Warning: Guessing of forward declaration of struct ", structDefinition.name, ", but done afterwards.\n");
+    //             return &data.nodes.structDefinitions[i];
+    //         }
+    //         else {
+
+    //         }
+    //     }
+    // }
+
     append(&data.nodes.structDefinitions, node);
 
     return &data.nodes.structDefinitions[len(data.nodes.structDefinitions) - 1];

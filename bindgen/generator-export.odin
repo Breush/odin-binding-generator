@@ -8,7 +8,7 @@ export_defines :: proc(data : ^GeneratorData) {
         defineName := clean_define_name(node.name, data.options);
 
         // @fixme fprint of float numbers are pretty badly handled,
-        // just has a 10^-3 precision. 
+        // just has a 10^-3 precision.
         fmt.fprint(data.handle, defineName, " :: ", node.value, ";\n");
     }
     fmt.fprint(data.handle, "\n");
@@ -32,7 +32,7 @@ export_enums :: proc(data : ^GeneratorData) {
         enumName, postfixes = clean_enum_name_for_prefix_removal(enumName, data.options);
 
         // Changing the case of postfixes to the enum value one,
-        // so that they can be removed. 
+        // so that they can be removed.
         enumValueCase := find_case(node.members[0].name);
         for postfix, i in postfixes {
             postfixes[i] = change_case(postfix, enumValueCase);
@@ -106,7 +106,7 @@ export_struct_or_union_members :: proc(data : ^GeneratorData, members : [dynamic
         fmt.fprint(data.handle, "\n");
     }
     for member in members {
-        type := clean_type(member.type, data.options);
+        type := clean_type(member.type, data.options, "    ");
         name := clean_variable_name(member.name, data.options);
         fmt.fprint(data.handle, "    ", name, " : ");
         for dimension in member.dimensions {
