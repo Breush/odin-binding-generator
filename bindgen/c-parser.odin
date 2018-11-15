@@ -160,7 +160,7 @@ parse_define :: proc(data : ^ParserData) {
     }
     // Macros are ignored
     else if is_define_macro(data) {
-        fmt.print("[bindgen] Warning: Ignoring define macro for ", node.name, "\n");
+        print_warning("Ignoring define macro for ", node.name, ".");
     }
     else {
         literalValue, ok := evaluate(data);
@@ -170,7 +170,7 @@ parse_define :: proc(data : ^ParserData) {
             data.knownedLiterals[node.name] = node.value;
         }
         else {
-            fmt.print("[bindgen] Warning: Ignoring define expression for ", node.name, "\n");
+            print_warning("Ignoring define expression for ", node.name, ".");
         }
     }
 
@@ -337,7 +337,7 @@ parse_enum_members :: proc(data : ^ParserData, members : ^[dynamic]EnumMember) {
 
         // Eat until end, as this might be a complex expression that we couldn't understand
         if token != "," && token != "}" {
-            fmt.print("[bindgen] Warning: Parser cannot understand fully the expression of enum member ", member.name, ".\n");
+            print_warning("Parser cannot understand fully the expression of enum member ", member.name, ".");
             for token != "," && token != "}" {
                 eat_token(data);
                 token = peek_token(data);
@@ -425,7 +425,7 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
 
             if token == ":" {
                 check_and_eat_token(data, ":");
-                fmt.print("[bindgen] Warning: Found bitfield in struct, which are not handled correctly.\n");
+                print_warning("Found bitfield in struct, which is not handled correctly.");
                 evaluate_i64(data);
                 token = peek_token(data);
             }

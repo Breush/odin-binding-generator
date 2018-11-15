@@ -92,7 +92,7 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
 
         // Ignore __attribute__
         if token == "__attribute__" {
-            fmt.print_err("[bindgen] Warning: __attribute__ will be ignored.\n");
+            print_warning("__attribute__ is ignored.");
 
             for data.bytes[offset] != '(' {
                 offset += 1;
