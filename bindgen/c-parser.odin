@@ -279,7 +279,6 @@ parse_union :: proc(data : ^ParserData) -> ^UnionDefinitionNode {
     token := peek_token(data);
     if token != "{" {
         node.name = parse_identifier(data);
-        token = peek_token(data);
     }
 
     // Parse definition
@@ -356,11 +355,29 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
     for token != "}" {
         member : StructOrUnionMember;
 
+        // Checking if embedding
+        embeddedStructOrUnion := false;
+        if token == "union" || token == "struct" {
+            startOffset := data.offset;
+            eat_token(data);
+
+            token = peek_token(data);
+            if token != "{" {
+                eat_token(data); // Identifier
+                token = peek_token(data);
+            }
+
+            embeddedStructOrUnion = (token == "{");
+            data.offset = startOffset;
+            token = peek_token(data);
+        }
+
         // Embedded union
-        if token == "union" {
+        if embeddedStructOrUnion && token == "union" {
             unionNode := parse_union(data);
             unionNode.name = fmt.tprint("EmbeddedUnion", embeddedUnionCount);
             embeddedUnionCount += 1;
+
 
             // Union might be named
             token = peek_token(data);
@@ -377,7 +394,7 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
             member.type = type;
         }
         // Embedded struct
-        else if token == "struct" {
+        else if embeddedStructOrUnion && token == "struct" {
             structNode := parse_struct(data);
             structNode.name = fmt.tprint("EmbeddedStruct", embeddedStructCount);
             embeddedStructCount += 1;
