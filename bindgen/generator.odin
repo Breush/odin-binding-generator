@@ -87,19 +87,17 @@ generate :: proc(
 
         // We fuse the SOAs
         headerNodes := parse(bytes, options.parserOptions);
-        merge_nodes(&data.nodes.defines, &headerNodes.defines);
-        merge_nodes(&data.nodes.enumDefinitions, &headerNodes.enumDefinitions);
-        merge_nodes(&data.nodes.unionDefinitions, &headerNodes.unionDefinitions);
-        merge_nodes(&data.nodes.structDefinitions, &headerNodes.structDefinitions);
-        merge_nodes(&data.nodes.functionDeclarations, &headerNodes.functionDeclarations);
-        merge_nodes(&data.nodes.typeAliases, &headerNodes.typeAliases);
-        merge_nodes(&data.nodes.functionPointerTypeAliases, &headerNodes.functionPointerTypeAliases);
+        merge_generic_nodes(&data.nodes.defines, &headerNodes.defines);
+        merge_generic_nodes(&data.nodes.enumDefinitions, &headerNodes.enumDefinitions);
+        merge_generic_nodes(&data.nodes.unionDefinitions, &headerNodes.unionDefinitions);
+        merge_forward_declared_nodes(&data.nodes.structDefinitions, &headerNodes.structDefinitions);
+        merge_generic_nodes(&data.nodes.functionDeclarations, &headerNodes.functionDeclarations);
+        merge_generic_nodes(&data.nodes.typeAliases, &headerNodes.typeAliases);
     }
 
     // Exporting
     export_defines(&data);
     export_type_aliases(&data);
-    export_function_pointer_type_aliases(&data);
     export_enums(&data);
     export_structs(&data);
     export_unions(&data);
@@ -133,8 +131,41 @@ simplify_library_name :: proc(libraryName : string) -> string {
     return libraryName[startOffset:endOffset];
 }
 
-merge_nodes :: proc(nodes : ^$T, headerNodes : ^T) {
-    for node in headerNodes {
-        append(nodes, node);
+merge_generic_nodes :: proc(nodes : ^$T, headerNodes : ^T) {
+    for headerNode in headerNodes {
+        // Check that there are no duplicated nodes (due to forward declaration or such)
+        duplicatedIndex := -1;
+        for i := 0; i < len(nodes); i += 1 {
+            node := nodes[i];
+            if node.name == headerNode.name {
+                duplicatedIndex = i;
+                break;
+            }
+        }
+
+        if duplicatedIndex < 0 {
+            append(nodes, headerNode);
+        }
+    }
+}
+
+merge_forward_declared_nodes :: proc(nodes : ^$T, headerNodes : ^T) {
+    for headerNode in headerNodes {
+        // Check that there are no duplicated nodes (due to forward declaration or such)
+        duplicatedIndex := -1;
+        for i := 0; i < len(nodes); i += 1 {
+            node := nodes[i];
+            if node.name == headerNode.name {
+                duplicatedIndex = i;
+                break;
+            }
+        }
+
+        if duplicatedIndex < 0 {
+            append(nodes, headerNode);
+        }
+        else if !headerNode.forwardDeclared {
+            nodes[duplicatedIndex] = headerNode;
+        }
     }
 }

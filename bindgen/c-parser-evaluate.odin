@@ -113,7 +113,7 @@ evaluate_level_0 :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool
         value = data.options.customExpressionHandlers[token](data);
     }
     else {
-        fmt.print("[bindgen] Warning: Unknown token ", token, " for expression evaluation.\n");
+        print_warning("Unknown token ", token, " for expression evaluation.");
         ok = false;
     }
 

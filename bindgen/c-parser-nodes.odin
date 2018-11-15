@@ -8,6 +8,7 @@ DefineNode :: struct {
 StructDefinitionNode :: struct {
     name : string,
     members : [dynamic]StructOrUnionMember,
+    forwardDeclared : bool,
 }
 
 UnionDefinitionNode :: struct {
@@ -31,12 +32,6 @@ TypeAliasNode :: struct {
     sourceType : Type,
 }
 
-FunctionPointerTypeAliasNode :: struct {
-    name : string,
-    returnType : Type,
-    parameters : [dynamic]FunctionParameter,
-}
-
 Nodes :: struct {
     defines : [dynamic]DefineNode,
     enumDefinitions : [dynamic]EnumDefinitionNode,
@@ -44,7 +39,6 @@ Nodes :: struct {
     structDefinitions : [dynamic]StructDefinitionNode,
     functionDeclarations : [dynamic]FunctionDeclarationNode,
     typeAliases : [dynamic]TypeAliasNode,
-    functionPointerTypeAliases : [dynamic]FunctionPointerTypeAliasNode,
 }
 
 LiteralValue :: union {
@@ -54,10 +48,21 @@ LiteralValue :: union {
 }
 
 // const char* -> prefix="const" main="char" postfix="*"
-Type :: struct {
+BasicType :: struct {
     prefix : string,
     main : string,
     postfix : string,
+}
+
+FunctionPointerType :: struct {
+    name : string,
+    returnType : BasicType,
+    parameters : [dynamic]FunctionParameter,
+}
+
+Type :: union {
+    BasicType,
+    FunctionPointerType,
 }
 
 EnumMember :: struct {
@@ -69,11 +74,11 @@ EnumMember :: struct {
 StructOrUnionMember :: struct {
     name : string,
     type : Type,
-    dimension : u32,  // Array dimension (0 if not an array)
+    dimensions : [dynamic]u64,  // Array dimensions
 }
 
 FunctionParameter :: struct {
     name : string,
     type : Type,
-    dimension : u32,  // Array dimension (0 if not an array)
+    dimensions : [dynamic]u64,  // Array dimensions
 }

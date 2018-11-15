@@ -24,7 +24,7 @@ clean_identifier :: proc(name : string) -> string {
     }
 
     // Keywords clash
-    else if name == "map" {
+    else if name == "map" || name == "proc" {
         return fmt.tprint("_", name);
     }
 
@@ -83,46 +83,92 @@ clean_define_name :: proc(defineName : string, options : ^GeneratorOptions) -> s
 }
 
 // Convert to Odin's types
-clean_type :: proc(type : Type, options : ^GeneratorOptions) -> string {
-    // If it matches the prefix, then it might be a struct.
-    main := type.main;
+clean_type :: proc(type : Type, options : ^GeneratorOptions, baseTab : string = "") -> string {
+    if _type, ok := type.(BasicType); ok {
+        // If it matches the prefix, then it might be a struct.
+        main := type.(BasicType).main;
 
-    if main == "int" { main = "i32"; }
-    else if main == "char" { main = "u8"; }
-    else if main == "int8_t" { main = "i8"; }
-    else if main == "uint8_t" { main = "u8"; }
-    else if main == "int16_t" { main = "i16"; }
-    else if main == "uint16_t" { main = "u16"; }
-    else if main == "int32_t" { main = "i32"; }
-    else if main == "uint32_t" { main = "u32"; }
-    else if main == "int64_t" { main = "i64"; }
-    else if main == "uint64_t" { main = "u64"; }
-    else if main == "size_t" { main = "u64"; }
-    else if main == "float" { main = "f32"; }
-    else if main == "double" { main = "f64"; }
-    else if main == "void" { main = ""; }
-    else {
-        main = clean_pseudo_type_name(main, options);
+        if main == "int" { main = "i32"; }
+        else if main == "char" { main = "u8"; }
+        else if main == "int8_t" { main = "i8"; }
+        else if main == "uint8_t" { main = "u8"; }
+        else if main == "int16_t" { main = "i16"; }
+        else if main == "uint16_t" { main = "u16"; }
+        else if main == "int32_t" { main = "i32"; }
+        else if main == "uint32_t" { main = "u32"; }
+        else if main == "int64_t" { main = "i64"; }
+        else if main == "uint64_t" { main = "u64"; }
+        else if main == "size_t" { main = "u64"; }
+        else if main == "float" { main = "f32"; }
+        else if main == "double" { main = "f64"; }
+        else if main == "void" { main = ""; }
+        else {
+            main = clean_pseudo_type_name(main, options);
+        }
+
+        // Check pointerness
+        odinPrefix := "";
+        for character in type.(BasicType).postfix {
+            if character == '*' {
+                if len(main) == 0 {
+                    main = "rawptr";
+                }
+                else if main == "u8" {
+                    main = "cstring";
+                }
+                else {
+                    odinPrefix = fmt.tprint("^", odinPrefix);
+                }
+            }
+        }
+
+        // Check unsigness
+        // @fixme If unsigned and int -> u32
+
+        return fmt.tprint(odinPrefix, main);
+    }
+    else if _type, ok := type.(FunctionPointerType); ok {
+        output := "#type proc(";
+        parameters := clean_function_parameters(_type.parameters, options, baseTab);
+        output = fmt.tprint(output, parameters, ")");
+        return output;
     }
 
-    // Check pointerness
-    odinPrefix := "";
-    for character in type.postfix {
-        if character == '*' {
-            if len(main) == 0 {
-                main = "rawptr";
-            }
-            else if main == "u8" {
-                main = "cstring";
-            }
-            else {
-                odinPrefix = fmt.tprint("^", odinPrefix);
-            }
+    return "<niy>";
+}
+
+clean_function_parameters :: proc(parameters : [dynamic]FunctionParameter, options : ^GeneratorOptions, baseTab : string) -> string {
+    output := "";
+
+    // Special case: function(void) does not really have a parameter
+    if (len(parameters) == 1) &&
+       (parameters[0].type.(BasicType).main == "void") &&
+       (parameters[0].type.(BasicType).prefix == "" && parameters[0].type.(BasicType).postfix == "") {
+        return "";
+    }
+
+    tab := "";
+    if (len(parameters) > 1) {
+        output = fmt.tprint(output, "\n");
+        tab = fmt.tprint(baseTab, "    ");
+    }
+
+    for parameter, i in parameters {
+        type := clean_type(parameter.type, options);
+        name := len(parameter.name) != 0 ? clean_variable_name(parameter.name, options) : "---";
+        output = fmt.tprint(output, tab, name, " : ");
+        for dimension in parameter.dimensions {
+            output = fmt.tprint(output, "[", dimension, "]");
+        }
+        output = fmt.tprint(output, type);
+        if i != len(parameters) - 1 {
+            output = fmt.tprint(output, ",\n");
         }
     }
 
-    // Check unsigness
-    // @fixme If unsigned and int -> u32
+    if (len(parameters) > 1) {
+        output = fmt.tprint(output, "\n", baseTab);
+    }
 
-    return fmt.tprint(odinPrefix, main);
+    return output;
 }

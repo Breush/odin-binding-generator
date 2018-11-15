@@ -1,5 +1,4 @@
-**/generated/*
-!**/generated/.gitkeep
+**/generated/*.odin
 
 *.bc
 *.ll
