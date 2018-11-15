@@ -8,6 +8,7 @@ DefineNode :: struct {
 StructDefinitionNode :: struct {
     name : string,
     members : [dynamic]StructOrUnionMember,
+    forwardDeclared : bool,
 }
 
 UnionDefinitionNode :: struct {
