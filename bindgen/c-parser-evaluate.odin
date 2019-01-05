@@ -104,6 +104,10 @@ evaluate_level_0 :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool
     else if token[0] == '"' {
         value = evaluate_string_literal(data);
     }
+    // Function-like
+    else if token == "sizeof" {
+        value = evaluate_sizeof(data);
+    }
     // Knowned literal
     else if token in data.knownedLiterals {
         value = evaluate_knowned_literal(data);
@@ -120,8 +124,30 @@ evaluate_level_0 :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool
     return;
 }
 
+evaluate_sizeof :: proc(data : ^ParserData) -> LiteralValue {
+    print_warning("Using 'sizeof()'. Currently not able to precompute that. Please check generated code.");
+
+    check_and_eat_token(data, "sizeof");
+    check_and_eat_token(data, "(");
+    for data.bytes[data.offset] != ')' {
+        data.offset += 1;
+    }
+    check_and_eat_token(data, ")");
+    return 1;
+}
+
 evaluate_parentheses :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool) {
     check_and_eat_token(data, "(");
+
+    // Cast to int (via "(int)" syntax)
+    token := peek_token(data);
+    if token == "int" {
+        check_and_eat_token(data, "int");
+        check_and_eat_token(data, ")");
+        value, ok = evaluate(data);
+        return;
+    }
+
     value, ok = evaluate(data);
     check_and_eat_token(data, ")");
     return;

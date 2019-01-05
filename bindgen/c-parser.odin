@@ -57,6 +57,8 @@ parse :: proc(bytes : []u8, options : ParserOptions) -> Nodes {
         }
         else if token == "extern" {
             check_and_eat_token(&data, "extern");
+        }
+        else if token == "\"C\"" {
             check_and_eat_token(&data, "\"C\"");
         }
         else if token == "#" {
@@ -69,12 +71,22 @@ parse :: proc(bytes : []u8, options : ParserOptions) -> Nodes {
             parse_struct(&data);
             check_and_eat_token(&data, ";");
         }
+        else if token == "enum" {
+            parse_enum(&data);
+            check_and_eat_token(&data, ";");
+        }
+        else if token == "union" {
+            parse_union(&data);
+            check_and_eat_token(&data, ";");
+        }
         else if (token[0] >= 'a' && token[0] <= 'z') ||
-                (token[0] >= 'A' && token[0] <= 'Z') {
-            parse_function_declaration(&data);
+                (token[0] >= 'A' && token[0] <= 'Z') ||
+                (token[0] == '_') {
+            parse_variable_or_function_declaration(&data);
         }
         else {
-            fmt.print_err("[bindings] Unexpected token: ", token, "\n");
+            fmt.print_err("[bindgen] Unexpected token: ", token, "\n");
+            fmt.print_err("[bindgen] ... at ", get_line_column(&data), "\n");
             data.offset += 1;
             return data.nodes;
         }
@@ -91,7 +103,17 @@ parse_any :: proc(data : ^ParserData) -> string {
 }
 
 parse_identifier :: proc(data : ^ParserData) -> string {
-    return parse_any(data);
+    identifier := parse_any(data);
+
+    if (identifier[0] < 'a' || identifier[0] > 'z') &&
+        (identifier[0] < 'A' || identifier[0] > 'Z') &&
+        (identifier[0] != '_') {
+            fmt.print_err("[bindgen] Expected identifier but found ", identifier, "\n");
+            fmt.print_err("[bindgen] ... at ", get_line_column(data), "\n");
+            os.exit(1);
+        }
+
+    return identifier;
 }
 
 parse_type :: proc(data : ^ParserData) -> Type {
@@ -99,20 +121,24 @@ parse_type :: proc(data : ^ParserData) -> Type {
     type : BasicType;
 
     startOffset := data.offset;
-    eat_type_specifiers(data);
+    implicitMain := eat_type_specifiers(data);
     type.prefix = extract_string(data, startOffset, data.offset);
 
+    // If we get something like long long with no "int",
+    // implicitMain is set
     startOffset = data.offset;
-    // @todo Check that the token is not "empty"
-    eat_token(data);
-    type.main = extract_string(data, startOffset, data.offset);
+    token := peek_token(data);
+    if !implicitMain || (token == "int" || token == "char" || token == "double") {
+        type.main = token;
+        eat_token(data);
+    }
 
     startOffset = data.offset;
     eat_type_specifiers(data);
     type.postfix = extract_string(data, startOffset, data.offset);
 
     // And if it seems to continue as a function pointer type, we proceed
-    token := peek_token(data);
+    token = peek_token(data);
     if token != "(" do
         return type;
 
@@ -207,20 +233,8 @@ parse_typedef :: proc(data : ^ParserData) {
     }
     // Enum aliasing
     else if token == "enum" {
-        node : EnumDefinitionNode;
-        check_and_eat_token(data, "enum");
-
-        // Check if optional name
-        token = peek_token(data);
-        if token != "{" {
-            eat_token(data); // <name>?
-        }
-
-        // Parse definition
-        parse_enum_members(data, &node.members);
-
+        node := parse_enum(data);
         node.name = parse_identifier(data);
-        append(&data.nodes.enumDefinitions, node);
     }
     // Union aliasing
     else if token == "union" {
@@ -270,6 +284,28 @@ parse_struct :: proc(data : ^ParserData) -> ^StructDefinitionNode {
     return &data.nodes.structDefinitions[len(data.nodes.structDefinitions) - 1];
 }
 
+
+parse_enum :: proc(data : ^ParserData) -> ^EnumDefinitionNode {
+    check_and_eat_token(data, "enum");
+
+    node : EnumDefinitionNode;
+
+    // Check if optional name
+    token := peek_token(data);
+    if token != "{" {
+        eat_token(data); // <name>?
+    }
+
+    // Check if definition
+    if token == "{" {
+        parse_enum_members(data, &node.members);
+    }
+
+    append(&data.nodes.enumDefinitions, node);
+
+    return &data.nodes.enumDefinitions[len(data.nodes.enumDefinitions) - 1];
+}
+
 parse_union :: proc(data : ^ParserData) -> ^UnionDefinitionNode {
     check_and_eat_token(data, "union");
 
@@ -279,10 +315,13 @@ parse_union :: proc(data : ^ParserData) -> ^UnionDefinitionNode {
     token := peek_token(data);
     if token != "{" {
         node.name = parse_identifier(data);
+        token = peek_token(data);
     }
 
-    // Parse definition
-    parse_struct_or_union_members(data, &node.members);
+    // Check if definition
+    if token == "{" {
+        parse_struct_or_union_members(data, &node.members);
+    }
 
     append(&data.nodes.unionDefinitions, node);
 
@@ -443,11 +482,27 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
     check_and_eat_token(data, "}");
 }
 
-parse_function_declaration :: proc(data : ^ParserData) {
+parse_variable_or_function_declaration :: proc(data : ^ParserData) {
+    type := parse_type(data);
+    name := parse_identifier(data);
+
+    token := peek_token(data);
+    if token == "(" {
+        functionDeclarationNode := parse_function_declaration(data);
+        functionDeclarationNode.returnType = type;
+        functionDeclarationNode.name = name;
+        return;
+    }
+
+    // Global variable declaration
+    check_and_eat_token(data, ";");
+
+    // @todo Expose global variables?
+}
+
+parse_function_declaration :: proc(data : ^ParserData) -> ^FunctionDeclarationNode {
     node : FunctionDeclarationNode;
 
-    node.returnType = parse_type(data);
-    node.name = parse_identifier(data);
     parse_function_parameters(data, &node.parameters);
 
     // Function definition? Ignore it.
@@ -468,6 +523,7 @@ parse_function_declaration :: proc(data : ^ParserData) {
     }
 
     append(&data.nodes.functionDeclarations, node);
+    return &data.nodes.functionDeclarations[len(data.nodes.functionDeclarations) - 1];
 }
 
 parse_function_parameters :: proc(data : ^ParserData, parameters : ^[dynamic]FunctionParameter) {
@@ -476,7 +532,18 @@ parse_function_parameters :: proc(data : ^ParserData, parameters : ^[dynamic]Fun
     token := peek_token(data);
     for token != ")" {
         parameter : FunctionParameter;
-        parameter.type = parse_type(data);
+
+        token = peek_token(data);
+        if token == "." {
+            print_warning("A function accepts variadic arguments, this is currently not handled within generated code.");
+
+            check_and_eat_token(data, ".");
+            check_and_eat_token(data, ".");
+            check_and_eat_token(data, ".");
+            break;
+        } else {
+            parameter.type = parse_type(data);
+        }
 
         // Check if named parameter
         token = peek_token(data);
