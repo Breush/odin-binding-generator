@@ -17,7 +17,7 @@ print_warning :: proc(args : ..any) {
 print_error :: proc(data : ^ParserData, loc := #caller_location, args : ..any) {
     message := fmt.tprint(..args);
 
-    min : u32 = data.offset - 1;
+    min : u32 = 0;
     for i := data.offset - 1; i > 0; i -= 1 {
         if data.bytes[i] == '\n' {
             min = i + 1;

@@ -112,6 +112,7 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
 
         // Ignore certain keywords
         else if (token == "inline" || token == "__inline" || token == "static"
+                || token == "restrict" || token == "__restrict"
                 || token == "volatile"
                 || token == "__extension__") {
             data.offset = offset;

@@ -24,7 +24,7 @@ clean_identifier :: proc(name : string) -> string {
     }
 
     // Keywords clash
-    else if name == "map" || name == "proc" || name == "c" {
+    else if name == "map" || name == "proc" || name == "opaque" || name == "in" {
         return fmt.tprint("_", name);
     }
 
@@ -86,20 +86,38 @@ clean_define_name :: proc(defineName : string, options : ^GeneratorOptions) -> s
 clean_type :: proc(type : Type, options : ^GeneratorOptions, baseTab : string = "") -> string {
     if _type, ok := type.(BuiltinType); ok {
         if _type == BuiltinType.Void do return "";
-        else if _type == BuiltinType.Int do return "c.int";
-        else if _type == BuiltinType.UInt do return "c.uint";
-        else if _type == BuiltinType.LongInt do return "c.long";
-        else if _type == BuiltinType.ULongInt do return "c.ulong";
-        else if _type == BuiltinType.LongLongInt do return "c.longlong";
-        else if _type == BuiltinType.ULongLongInt do return "c.ulonglong";
-        else if _type == BuiltinType.ShortInt do return "c.short";
-        else if _type == BuiltinType.UShortInt do return "c.ushort";
-        else if _type == BuiltinType.Char do return "c.char";
-        else if _type == BuiltinType.SChar do return "c.schar";
-        else if _type == BuiltinType.UChar do return "c.uchar";
-        else if _type == BuiltinType.Float do return "c.float";
-        else if _type == BuiltinType.Double do return "c.double";
-        else if _type == BuiltinType.LongDouble do return "<niy>";
+        else if _type == BuiltinType.Int do return "_c.int";
+        else if _type == BuiltinType.UInt do return "_c.uint";
+        else if _type == BuiltinType.LongInt do return "_c.long";
+        else if _type == BuiltinType.ULongInt do return "_c.ulong";
+        else if _type == BuiltinType.LongLongInt do return "_c.longlong";
+        else if _type == BuiltinType.ULongLongInt do return "_c.ulonglong";
+        else if _type == BuiltinType.ShortInt do return "_c.short";
+        else if _type == BuiltinType.UShortInt do return "_c.ushort";
+        else if _type == BuiltinType.Char do return "_c.char";
+        else if _type == BuiltinType.SChar do return "_c.schar";
+        else if _type == BuiltinType.UChar do return "_c.uchar";
+        else if _type == BuiltinType.Float do return "_c.float";
+        else if _type == BuiltinType.Double do return "_c.double";
+        else if _type == BuiltinType.LongDouble {
+            print_warning("Found long double which is currently not supported. Fallback to double in generated code.");
+            return "_c.double";
+        }
+    }
+    else if _type, ok := type.(StandardType); ok {
+        if _type == StandardType.Int8 do return "i8";
+        else if _type == StandardType.Int16 do return "i16";
+        else if _type == StandardType.Int32 do return "i32";
+        else if _type == StandardType.Int64 do return "i64";
+        else if _type == StandardType.UInt8 do return "u8";
+        else if _type == StandardType.UInt16 do return "u16";
+        else if _type == StandardType.UInt32 do return "u32";
+        else if _type == StandardType.UInt64 do return "u64";
+        else if _type == StandardType.Size do return "_c.size_t";
+        else if _type == StandardType.SSize do return "_c.ssize_t";
+        else if _type == StandardType.PtrDiff do return "_c.ptrdiff_t";
+        else if _type == StandardType.UIntPtr do return "_c.uintptr_t";
+        else if _type == StandardType.IntPtr do return "_c.intptr_t";
     }
     else if _type, ok := type.(PointerType); ok {
         if __type, ok := _type.type.(BuiltinType); ok {
@@ -110,16 +128,7 @@ clean_type :: proc(type : Type, options : ^GeneratorOptions, baseTab : string = 
         return fmt.tprint("^", name);
     }
     else if _type, ok := type.(IdentifierType); ok {
-        if _type.name == "int8_t" do return "i8";
-        else if _type.name == "int16_t" do return "i16";
-        else if _type.name == "int32_t" do return "i32";
-        else if _type.name == "int64_t" do return "i64";
-        else if _type.name == "uint8_t" do return "u8";
-        else if _type.name == "uint16_t" do return "u16";
-        else if _type.name == "uint32_t" do return "u32";
-        else if _type.name == "uint64_t" do return "u64";
-        else if _type.name == "size_t" do return "c.size_t";
-        else do return clean_pseudo_type_name(_type.name, options);
+        return clean_pseudo_type_name(_type.name, options);
     }
     else if _type, ok := type.(FunctionPointerType); ok {
         output := "#type proc(";
@@ -150,9 +159,18 @@ clean_function_parameters :: proc(parameters : [dynamic]FunctionParameter, optio
         tab = fmt.tprint(baseTab, "    ");
     }
 
+    unamedParametersCount := 0;
     for parameter, i in parameters {
         type := clean_type(parameter.type, options);
-        name := len(parameter.name) != 0 ? clean_variable_name(parameter.name, options) : "---";
+
+        name : string;
+        if len(parameter.name) != 0 {
+            name = clean_variable_name(parameter.name, options);
+        } else {
+            name = fmt.tprint("unamed", unamedParametersCount);
+            unamedParametersCount += 1;
+        }
+
         output = fmt.tprint(output, tab, name, " : ");
         for dimension in parameter.dimensions {
             output = fmt.tprint(output, "[", dimension, "]");

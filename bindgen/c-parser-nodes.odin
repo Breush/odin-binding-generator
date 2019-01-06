@@ -49,12 +49,14 @@ LiteralValue :: union {
 
 Type :: union {
     BuiltinType,
+    StandardType,
     PointerType,
     IdentifierType,
     FunctionPointerType,
 }
 
 BuiltinType :: enum {
+    Unknown,
     Void,
     Int,
     UInt,
@@ -70,6 +72,24 @@ BuiltinType :: enum {
     Float,
     Double,
     LongDouble,
+}
+
+// Not defined by C language but in <stdint.h>
+StandardType :: enum {
+    Unknown,
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    UInt8,
+    UInt16,
+    UInt32,
+    UInt64,
+    Size,
+    SSize,
+    PtrDiff,
+    UIntPtr,
+    IntPtr,
 }
 
 PointerType :: struct {

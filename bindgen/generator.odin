@@ -76,7 +76,7 @@ generate :: proc(
     fmt.fprint(data.handle, "\n");
     fmt.fprint(data.handle, "foreign import \"", foreignLibrary, "\"\n");
     fmt.fprint(data.handle, "\n");
-    fmt.fprint(data.handle, "import \"core:c\"\n");
+    fmt.fprint(data.handle, "import _c \"core:c\"\n");
     fmt.fprint(data.handle, "\n");
 
     // Parsing header files
