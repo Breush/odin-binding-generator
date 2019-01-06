@@ -6,8 +6,9 @@ import "core:strings"
 import "core:strconv"
 
 // Global counters
-embeddedUnionCount := 0;
-embeddedStructCount := 0;
+anonymousStructCount := 0;
+anonymousUnionCount := 0;
+anonymousEnumCount := 0;
 
 CustomHandler :: proc(data : ^ParserData);
 CustomExpressionHandler :: proc(data : ^ParserData) -> LiteralValue;
@@ -36,9 +37,16 @@ ParserData :: struct {
     foundFullReturn : bool,
 }
 
-parse :: proc(bytes : []u8, options : ParserOptions) -> Nodes {
-    embeddedUnionCount = 0;
-    embeddedStructCount = 0;
+is_identifier :: proc(token : string) -> bool {
+    return (token[0] >= 'a' && token[0] <= 'z') ||
+        (token[0] >= 'A' && token[0] <= 'Z') ||
+        (token[0] == '_');
+}
+
+parse :: proc(bytes : []u8, options : ParserOptions, loc := #caller_location) -> Nodes {
+    anonymousStructCount = 0;
+    anonymousUnionCount = 0;
+    anonymousEnumCount = 0;
 
     data : ParserData;
     data.bytes = bytes;
@@ -67,27 +75,11 @@ parse :: proc(bytes : []u8, options : ParserOptions) -> Nodes {
         else if token == "typedef" {
             parse_typedef(&data);
         }
-        else if token == "struct" {
-            parse_struct(&data);
-            check_and_eat_token(&data, ";");
-        }
-        else if token == "enum" {
-            parse_enum(&data);
-            check_and_eat_token(&data, ";");
-        }
-        else if token == "union" {
-            parse_union(&data);
-            check_and_eat_token(&data, ";");
-        }
-        else if (token[0] >= 'a' && token[0] <= 'z') ||
-                (token[0] >= 'A' && token[0] <= 'Z') ||
-                (token[0] == '_') {
+        else if is_identifier(token) {
             parse_variable_or_function_declaration(&data);
         }
         else {
-            fmt.print_err("[bindgen] Unexpected token: ", token, "\n");
-            fmt.print_err("[bindgen] ... at ", get_line_column(&data), "\n");
-            data.offset += 1;
+            print_error(&data, loc, "Unexpected token: ", token, ".");
             return data.nodes;
         }
     }
@@ -102,57 +94,236 @@ parse_any :: proc(data : ^ParserData) -> string {
     return identifier;
 }
 
-parse_identifier :: proc(data : ^ParserData) -> string {
+parse_identifier :: proc(data : ^ParserData, loc := #caller_location) -> string {
     identifier := parse_any(data);
 
     if (identifier[0] < 'a' || identifier[0] > 'z') &&
         (identifier[0] < 'A' || identifier[0] > 'Z') &&
         (identifier[0] != '_') {
-            fmt.print_err("[bindgen] Expected identifier but found ", identifier, "\n");
-            fmt.print_err("[bindgen] ... at ", get_line_column(data), "\n");
-            os.exit(1);
+            print_error(data, loc, "Expected identifier but found ", identifier, ".");
         }
 
     return identifier;
 }
 
-parse_type :: proc(data : ^ParserData) -> Type {
-    // We start by parsing a type
-    type : BasicType;
+// This will parse anything that look like a type:
+// Builtin: char/int/float/...
+// Struct-like: struct A/struct { ... }/enum E
+// Function pointer: void (*f)(...)
+//
+// Definition permitted: If a struct-like definition is found, it will generate
+// the according Node and return a corresponding type.
+parse_type :: proc(data : ^ParserData, definitionPermitted := false) -> Type {
+    type : Type;
 
-    startOffset := data.offset;
-    implicitMain := eat_type_specifiers(data);
-    type.prefix = extract_string(data, startOffset, data.offset);
-
-    // If we get something like long long with no "int",
-    // implicitMain is set
-    startOffset = data.offset;
+    // Eat qualifiers
     token := peek_token(data);
-    if !implicitMain || (token == "int" || token == "char" || token == "double") {
-        type.main = token;
+    if token == "const" {
+        eat_token(data);
+        token = peek_token(data);
+    }
+
+    // Parse main type
+    if token == "struct" {
+        type = parse_struct_type(data, definitionPermitted);
+    }
+    else if token == "union" {
+        type = parse_union_type(data);
+    }
+    else if token == "enum" {
+        type = parse_enum_type(data);
+    }
+    else if token == "int" || token == "long" || token == "unsigned" ||
+            token == "short" || token == "signed" || token == "float" ||
+            token == "double" || token == "void" || token == "char" {
+        type = parse_builtin_type(data);
+    }
+    else {
+        // Basic identifier type
+        identifierType : IdentifierType;
+        identifierType.name = parse_identifier(data);
+        type = identifierType;
+    }
+
+    // Eat qualifiers
+    token = peek_token(data);
+    if token == "const" {
+        eat_token(data);
+        token = peek_token(data);
+    }
+
+    // Check if pointer
+    for token == "*" {
+        check_and_eat_token(data, "*");
+        token = peek_token(data);
+
+        pointerType : PointerType;
+        pointerType.type = new(Type);
+        pointerType.type^ = type; // Copy
+
+        type = pointerType;
+
+        // Eat qualifiers
+        if token == "const" {
+            eat_token(data);
+            token = peek_token(data);
+        }
+    }
+
+    // ----- Function pointer type
+
+    if token == "(" {
+        check_and_eat_token(data, "(");
+        check_and_eat_token(data, "*");
+
+        functionPointerType : FunctionPointerType;
+        functionPointerType.returnType = new(Type);
+        functionPointerType.returnType^ = type;
+        functionPointerType.name = parse_identifier(data);
+
+        type = functionPointerType;
+
+        check_and_eat_token(data, ")");
+        parse_function_parameters(data, &functionPointerType.parameters);
+    }
+
+    return type;
+}
+
+parse_builtin_type :: proc(data : ^ParserData) -> BuiltinType {
+    intFound := false;
+    shortFound := false;
+    signedFound := false;
+    unsignedFound := false;
+    longCount := 0;
+
+    for true {
+        token := peek_token(data);
+
+        if token == "void" {
+            eat_token(data);
+            return BuiltinType.Void;
+        }
+        else if token == "int" {
+            eat_token(data);
+            intFound = true;
+            break;
+        }
+        else if token == "float" {
+            eat_token(data);
+            return BuiltinType.Float;
+        }
+        else if token == "double" {
+            eat_token(data);
+            if longCount == 0 do return BuiltinType.Double;
+            else do return BuiltinType.LongDouble;
+        }
+        else if token == "char" {
+            eat_token(data);
+            if signedFound do return BuiltinType.SChar;
+            else if unsignedFound do return BuiltinType.UChar;
+            else do return BuiltinType.Char;
+        }
+        else if token == "long" do longCount += 1;
+        else if token == "short" do shortFound = true;
+        else if token == "unsigned" do unsignedFound = true;
+        else if token == "signed" do signedFound = true;
+        else do break;
+
         eat_token(data);
     }
 
-    startOffset = data.offset;
-    eat_type_specifiers(data);
-    type.postfix = extract_string(data, startOffset, data.offset);
+    // Implicit and explicit int
+    if intFound || shortFound || unsignedFound || signedFound || longCount > 0 {
+        if unsignedFound {
+            if shortFound do return BuiltinType.UShortInt;
+            if longCount == 0 do return BuiltinType.UInt;
+            if longCount == 1 do return BuiltinType.ULongInt;
+            if longCount == 2 do return BuiltinType.ULongLongInt;
+        } else {
+            if shortFound do return BuiltinType.ShortInt;
+            if longCount == 0 do return BuiltinType.Int;
+            if longCount == 1 do return BuiltinType.LongInt;
+            if longCount == 2 do return BuiltinType.LongLongInt;
+        }
+    }
 
-    // And if it seems to continue as a function pointer type, we proceed
-    token = peek_token(data);
-    if token != "(" do
-        return type;
+    return BuiltinType.Void;
+}
 
-    functionPointerType : FunctionPointerType;
-    check_and_eat_token(data, "(");
-    check_and_eat_token(data, "*");
+parse_struct_type :: proc(data : ^ParserData, definitionPermitted : bool) -> IdentifierType {
+    check_and_eat_token(data, "struct");
 
-    functionPointerType.returnType = type;
-    functionPointerType.name = parse_identifier(data);
-    check_and_eat_token(data, ")");
+    type : IdentifierType;
+    token := peek_token(data);
 
-    parse_function_parameters(data, &functionPointerType.parameters);
+    if !definitionPermitted || token != "{" {
+        type.name = parse_identifier(data);
+        token = peek_token(data);
+    } else {
+        type.name = fmt.tprint("AnonymousStruct", anonymousStructCount);
+        anonymousStructCount += 1;
+    }
 
-    return functionPointerType;
+    if token == "{" {
+        node := parse_struct_definition(data);
+        node.name = type.name;
+    } else if definitionPermitted {
+        // @note Whatever happens, we create a definition of the struct,
+        // as it might be used to forward declare it and then use it only with a pointer.
+        // This for instance the pattern for xcb_connection_t which definition
+        // is never known from user API.
+        node : StructDefinitionNode;
+        node.forwardDeclared = false;
+        node.name = type.name;
+        append(&data.nodes.structDefinitions, node);
+    }
+
+    return type;
+}
+
+parse_union_type :: proc(data : ^ParserData) -> IdentifierType {
+    check_and_eat_token(data, "union");
+
+    type : IdentifierType;
+    token := peek_token(data);
+
+    if token != "{" {
+        type.name = parse_identifier(data);
+        token = peek_token(data);
+    } else {
+        type.name = fmt.tprint("AnonymousUnion", anonymousUnionCount);
+        anonymousUnionCount += 1;
+    }
+
+    if token == "{" {
+        node := parse_union_definition(data);
+        node.name = type.name;
+    }
+
+    return type;
+}
+
+parse_enum_type :: proc(data : ^ParserData) -> IdentifierType {
+    check_and_eat_token(data, "enum");
+
+    type : IdentifierType;
+    token := peek_token(data);
+
+    if token != "{" {
+        type.name = parse_identifier(data);
+        token = peek_token(data);
+    } else {
+        type.name = fmt.tprint("AnonymousEnum", anonymousEnumCount);
+        anonymousEnumCount += 1;
+    }
+
+    if token == "{" {
+        node := parse_enum_definition(data);
+        node.name = type.name;
+    }
+
+    return type;
 }
 
 /**
@@ -208,124 +379,60 @@ parse_define :: proc(data : ^ParserData) {
 }
 
 /**
- * Inlined struct, enum or union definition aliasing:
- *  typedef (struct|enum|union) <name>? {
- *      <content>
- *  } <name>;
- *
- * Struct aliasing:
- *  typedef struct <name> <name>;
- *
- * Type alias:
- *  typedef <originalType> <name>;
- *
- * Function pointer type alias:
- * typedef <returnType> (* <name>)(<parameters>);
+ * Type aliasing.
+ *  typedef <sourceType> <name>;
  */
 parse_typedef :: proc(data : ^ParserData) {
     check_and_eat_token(data, "typedef");
 
-    // Struct aliasing
-    token := peek_token(data);
-    if token == "struct" {
-        node := parse_struct(data);
-        node.name = parse_identifier(data);
-    }
-    // Enum aliasing
-    else if token == "enum" {
-        node := parse_enum(data);
-        node.name = parse_identifier(data);
-    }
-    // Union aliasing
-    else if token == "union" {
-        node := parse_union(data);
-        node.name = parse_identifier(data);
-    }
-    // Type aliasing
-    else {
-        node : TypeAliasNode;
-        node.sourceType = parse_type(data);
+    // @note Struct-like definitions (and such)
+    // are generated within type parsing.
+    //
+    // So that typedef struct { int foo; }* Ap; is valid.
+    // Please note that generated code will create an "Anonymous struct"
+    // and a type alias in such cases.
 
-        // In the case of function pointer types, the name has been parsed
-        // during type inspection.
-        if sourceType, ok := node.sourceType.(FunctionPointerType); ok {
-            node.name = sourceType.name;
-        }
-        else {
-            node.name = parse_identifier(data);
-        }
-        append(&data.nodes.typeAliases, node);
+    // Parsing type
+    node : TypedefNode;
+    node.sourceType = parse_type(data, true);
+
+    if sourceType, ok := node.sourceType.(FunctionPointerType); ok {
+        node.name = sourceType.name;
+    } else {
+        node.name = parse_identifier(data);
     }
+
+    // @note Commented tool for debug
+    // fmt.println("Typedef: ", node.sourceType, node.name);
+
+    append(&data.nodes.typedefs, node);
 
     check_and_eat_token(data, ";");
 }
 
-parse_struct :: proc(data : ^ParserData) -> ^StructDefinitionNode {
-    check_and_eat_token(data, "struct");
-
+parse_struct_definition :: proc(data : ^ParserData) -> ^StructDefinitionNode {
     node : StructDefinitionNode;
     node.forwardDeclared = false;
-
-    // Check if optional name
-    token := peek_token(data);
-    if token != "{" {
-        node.name = parse_identifier(data);
-        token = peek_token(data);
-    }
-
-    // Check if definition
-    if token == "{" {
-        parse_struct_or_union_members(data, &node.members);
-        node.forwardDeclared = true;
-    }
+    parse_struct_or_union_members(data, &node.members);
 
     append(&data.nodes.structDefinitions, node);
-
     return &data.nodes.structDefinitions[len(data.nodes.structDefinitions) - 1];
 }
 
-
-parse_enum :: proc(data : ^ParserData) -> ^EnumDefinitionNode {
-    check_and_eat_token(data, "enum");
-
-    node : EnumDefinitionNode;
-
-    // Check if optional name
-    token := peek_token(data);
-    if token != "{" {
-        eat_token(data); // <name>?
-    }
-
-    // Check if definition
-    if token == "{" {
-        parse_enum_members(data, &node.members);
-    }
-
-    append(&data.nodes.enumDefinitions, node);
-
-    return &data.nodes.enumDefinitions[len(data.nodes.enumDefinitions) - 1];
-}
-
-parse_union :: proc(data : ^ParserData) -> ^UnionDefinitionNode {
-    check_and_eat_token(data, "union");
-
+parse_union_definition :: proc(data : ^ParserData) -> ^UnionDefinitionNode {
     node : UnionDefinitionNode;
-
-    // Check if optional name
-    token := peek_token(data);
-    if token != "{" {
-        node.name = parse_identifier(data);
-        token = peek_token(data);
-    }
-
-    // Check if definition
-    if token == "{" {
-        parse_struct_or_union_members(data, &node.members);
-    }
+    parse_struct_or_union_members(data, &node.members);
 
     append(&data.nodes.unionDefinitions, node);
-
     return &data.nodes.unionDefinitions[len(data.nodes.unionDefinitions) - 1];
+}
+
+parse_enum_definition :: proc(data : ^ParserData) -> ^EnumDefinitionNode {
+    node : EnumDefinitionNode;
+    parse_enum_members(data, &node.members);
+
+    append(&data.nodes.enumDefinitions, node);
+    return &data.nodes.enumDefinitions[len(data.nodes.enumDefinitions) - 1];
 }
 
 /**
@@ -393,84 +500,39 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
     token := peek_token(data);
     for token != "}" {
         member : StructOrUnionMember;
+        member.type = parse_type(data, true);
 
-        // Checking if embedding
-        embeddedStructOrUnion := false;
-        if token == "union" || token == "struct" {
-            startOffset := data.offset;
-            eat_token(data);
-
-            token = peek_token(data);
-            if token != "{" {
-                eat_token(data); // Identifier
-                token = peek_token(data);
-            }
-
-            embeddedStructOrUnion = (token == "{");
-            data.offset = startOffset;
-            token = peek_token(data);
+        // In the case of function pointer types, the name has been parsed
+        // during type inspection.
+        if type, ok := member.type.(FunctionPointerType); ok {
+            member.name = type.name;
         }
-
-        // Embedded union
-        if embeddedStructOrUnion && token == "union" {
-            unionNode := parse_union(data);
-            unionNode.name = fmt.tprint("EmbeddedUnion", embeddedUnionCount);
-            embeddedUnionCount += 1;
-
-
-            // Union might be named
+        else {
+            // Unamed (struct or union)
             token = peek_token(data);
-            if token != "," && token != ";" && token != "}" {
-                member.name = parse_identifier(data);
-            }
-            else {
+            if !is_identifier(token) {
                 member.name = fmt.tprint("unamed", unamedCount);
                 unamedCount += 1;
             }
-
-            type : BasicType;
-            type.main = unionNode.name;
-            member.type = type;
-        }
-        // Embedded struct
-        else if embeddedStructOrUnion && token == "struct" {
-            structNode := parse_struct(data);
-            structNode.name = fmt.tprint("EmbeddedStruct", embeddedStructCount);
-            embeddedStructCount += 1;
-
-            member.name = parse_identifier(data);
-
-            type : BasicType;
-            type.main = structNode.name;
-            member.type = type;
-        }
-        else {
-            member.type = parse_type(data);
-
-            // In the case of function pointer types, the name has been parsed
-            // during type inspection.
-            if type, ok := member.type.(FunctionPointerType); ok {
-                member.name = type.name;
-            }
             else {
                 member.name = parse_identifier(data);
             }
+        }
 
+        token = peek_token(data);
+        for token == "[" {
+            check_and_eat_token(data, "[");
+            dimension := evaluate_i64(data);
+            append(&member.dimensions, cast(u64) dimension);
+            check_and_eat_token(data, "]");
             token = peek_token(data);
-            for token == "[" {
-                check_and_eat_token(data, "[");
-                dimension := evaluate_i64(data);
-                append(&member.dimensions, cast(u64) dimension);
-                check_and_eat_token(data, "]");
-                token = peek_token(data);
-            }
+        }
 
-            if token == ":" {
-                check_and_eat_token(data, ":");
-                print_warning("Found bitfield in struct, which is not handled correctly.");
-                evaluate_i64(data);
-                token = peek_token(data);
-            }
+        if token == ":" {
+            check_and_eat_token(data, ":");
+            print_warning("Found bitfield in struct, which is not handled correctly.");
+            evaluate_i64(data);
+            token = peek_token(data);
         }
 
         append(structOrUnionMembers, member);
@@ -483,10 +545,18 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
 }
 
 parse_variable_or_function_declaration :: proc(data : ^ParserData) {
-    type := parse_type(data);
+    type := parse_type(data, true);
+
+    // If it's just a type, it might be a struct definition
+    token := peek_token(data);
+    if token == ";" {
+        check_and_eat_token(data, ";");
+        return;
+    }
+
     name := parse_identifier(data);
 
-    token := peek_token(data);
+    token = peek_token(data);
     if token == "(" {
         functionDeclarationNode := parse_function_declaration(data);
         functionDeclarationNode.returnType = type;
@@ -497,7 +567,7 @@ parse_variable_or_function_declaration :: proc(data : ^ParserData) {
     // Global variable declaration
     check_and_eat_token(data, ";");
 
-    // @todo Expose global variables?
+    // @todo Expose global variables to generated code?
 }
 
 parse_function_declaration :: proc(data : ^ParserData) -> ^FunctionDeclarationNode {

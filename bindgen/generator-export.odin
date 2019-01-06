@@ -14,10 +14,11 @@ export_defines :: proc(data : ^GeneratorData) {
     fmt.fprint(data.handle, "\n");
 }
 
-export_type_aliases :: proc(data : ^GeneratorData) {
-    for node in data.nodes.typeAliases {
+export_typedefs :: proc(data : ^GeneratorData) {
+    for node in data.nodes.typedefs {
         aliasName := clean_pseudo_type_name(node.name, data.options);
         sourceType := clean_type(node.sourceType, data.options);
+        if aliasName == sourceType do continue;
         fmt.fprint(data.handle, aliasName, " :: ", sourceType, ";\n");
     }
     fmt.fprint(data.handle, "\n");

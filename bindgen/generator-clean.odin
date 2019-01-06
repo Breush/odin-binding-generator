@@ -24,7 +24,7 @@ clean_identifier :: proc(name : string) -> string {
     }
 
     // Keywords clash
-    else if name == "map" || name == "proc" {
+    else if name == "map" || name == "proc" || name == "c" {
         return fmt.tprint("_", name);
     }
 
@@ -84,53 +84,48 @@ clean_define_name :: proc(defineName : string, options : ^GeneratorOptions) -> s
 
 // Convert to Odin's types
 clean_type :: proc(type : Type, options : ^GeneratorOptions, baseTab : string = "") -> string {
-    if _type, ok := type.(BasicType); ok {
-        // If it matches the prefix, then it might be a struct.
-        main := type.(BasicType).main;
-
-        if main == "int" { main = "i32"; }
-        else if main == "char" { main = "u8"; }
-        else if main == "int8_t" { main = "i8"; }
-        else if main == "uint8_t" { main = "u8"; }
-        else if main == "int16_t" { main = "i16"; }
-        else if main == "uint16_t" { main = "u16"; }
-        else if main == "int32_t" { main = "i32"; }
-        else if main == "uint32_t" { main = "u32"; }
-        else if main == "int64_t" { main = "i64"; }
-        else if main == "uint64_t" { main = "u64"; }
-        else if main == "size_t" { main = "u64"; }
-        else if main == "float" { main = "f32"; }
-        else if main == "double" { main = "f64"; }
-        else if main == "void" { main = ""; }
-        else {
-            main = clean_pseudo_type_name(main, options);
+    if _type, ok := type.(BuiltinType); ok {
+        if _type == BuiltinType.Void do return "";
+        else if _type == BuiltinType.Int do return "c.int";
+        else if _type == BuiltinType.UInt do return "c.uint";
+        else if _type == BuiltinType.LongInt do return "c.long";
+        else if _type == BuiltinType.ULongInt do return "c.ulong";
+        else if _type == BuiltinType.LongLongInt do return "c.longlong";
+        else if _type == BuiltinType.ULongLongInt do return "c.ulonglong";
+        else if _type == BuiltinType.ShortInt do return "c.short";
+        else if _type == BuiltinType.UShortInt do return "c.ushort";
+        else if _type == BuiltinType.Char do return "c.char";
+        else if _type == BuiltinType.SChar do return "c.schar";
+        else if _type == BuiltinType.UChar do return "c.uchar";
+        else if _type == BuiltinType.Float do return "c.float";
+        else if _type == BuiltinType.Double do return "c.double";
+        else if _type == BuiltinType.LongDouble do return "<niy>";
+    }
+    else if _type, ok := type.(PointerType); ok {
+        if __type, ok := _type.type.(BuiltinType); ok {
+            if __type == BuiltinType.Void do return "rawptr";
+            else if __type == BuiltinType.Char do return "cstring";
         }
-
-        // Check pointerness
-        odinPrefix := "";
-        for character in type.(BasicType).postfix {
-            if character == '*' {
-                if len(main) == 0 {
-                    main = "rawptr";
-                }
-                else if main == "u8" {
-                    main = "cstring";
-                }
-                else {
-                    odinPrefix = fmt.tprint("^", odinPrefix);
-                }
-            }
-        }
-
-        // Check unsigness
-        // @fixme If unsigned and int -> u32
-
-        return fmt.tprint(odinPrefix, main);
+        name := clean_type(_type.type^, options, baseTab);
+        return fmt.tprint("^", name);
+    }
+    else if _type, ok := type.(IdentifierType); ok {
+        if _type.name == "int8_t" do return "i8";
+        else if _type.name == "int16_t" do return "i16";
+        else if _type.name == "int32_t" do return "i32";
+        else if _type.name == "int64_t" do return "i64";
+        else if _type.name == "uint8_t" do return "u8";
+        else if _type.name == "uint16_t" do return "u16";
+        else if _type.name == "uint32_t" do return "u32";
+        else if _type.name == "uint64_t" do return "u64";
+        else if _type.name == "size_t" do return "c.size_t";
+        else do return clean_pseudo_type_name(_type.name, options);
     }
     else if _type, ok := type.(FunctionPointerType); ok {
         output := "#type proc(";
         parameters := clean_function_parameters(_type.parameters, options, baseTab);
         output = fmt.tprint(output, parameters, ")");
+        // @fixme And return value!?
         return output;
     }
 
@@ -141,10 +136,12 @@ clean_function_parameters :: proc(parameters : [dynamic]FunctionParameter, optio
     output := "";
 
     // Special case: function(void) does not really have a parameter
-    if (len(parameters) == 1) &&
-       (parameters[0].type.(BasicType).main == "void") &&
-       (parameters[0].type.(BasicType).prefix == "" && parameters[0].type.(BasicType).postfix == "") {
-        return "";
+    if len(parameters) == 1 {
+        if _type, ok := parameters[0].type.(BuiltinType); ok {
+            if _type == BuiltinType.Void {
+                return "";
+            }
+        }
     }
 
     tab := "";

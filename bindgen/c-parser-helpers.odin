@@ -214,32 +214,11 @@ eat_token :: proc(data : ^ParserData) {
     data.offset = peek_token_end(data);
 }
 
-// Returns whether the main type is implicitly an int
-eat_type_specifiers :: proc(data : ^ParserData) -> (implicitMain : bool) {
-    token := peek_token(data);
-    for token == "*" || token == "const" ||
-        token == "unsigned" || token == "signed" ||
-        token == "long" || token == "short" ||
-        token == "struct" {
-        implicitMain = implicitMain ||
-            (token == "unsigned" || token == "signed" ||
-             token == "long" || token == "short");
-
-        data.offset += cast(u32) len(token);
-        token = peek_token(data);
-    }
-
-    return;
-}
-
 // Eat next token
 check_and_eat_token :: proc(data : ^ParserData, expectedToken : string, loc := #caller_location) {
     token := peek_token(data);
     if token != expectedToken {
-        fmt.print_err("[bindgen] Expected ", expectedToken, " but got ", token, " at line ", get_line_column(data), ".\n");
-        fmt.print_err("[bindgen] ... within this context:\n", extract_string(data, data.offset - 100, data.offset + 100), "...\n");
-        fmt.print_err("[bindgen] ... assert emitted from ", loc.procedure, ".\n");
-        os.exit(1);
+        print_error(data, loc, "Expected ", expectedToken, " but found ", token, ".");
     }
     data.offset += cast(u32) len(token);
 }

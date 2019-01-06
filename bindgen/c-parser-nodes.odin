@@ -27,7 +27,7 @@ FunctionDeclarationNode :: struct {
     parameters : [dynamic]FunctionParameter,
 }
 
-TypeAliasNode :: struct {
+TypedefNode :: struct {
     name : string,
     sourceType : Type,
 }
@@ -38,7 +38,7 @@ Nodes :: struct {
     unionDefinitions : [dynamic]UnionDefinitionNode,
     structDefinitions : [dynamic]StructDefinitionNode,
     functionDeclarations : [dynamic]FunctionDeclarationNode,
-    typeAliases : [dynamic]TypeAliasNode,
+    typedefs : [dynamic]TypedefNode,
 }
 
 LiteralValue :: union {
@@ -47,22 +47,43 @@ LiteralValue :: union {
     string,
 }
 
-// const char* -> prefix="const" main="char" postfix="*"
-BasicType :: struct {
-    prefix : string,
-    main : string,
-    postfix : string,
+Type :: union {
+    BuiltinType,
+    PointerType,
+    IdentifierType,
+    FunctionPointerType,
+}
+
+BuiltinType :: enum {
+    Void,
+    Int,
+    UInt,
+    LongInt,
+    ULongInt,
+    LongLongInt,
+    ULongLongInt,
+    ShortInt,
+    UShortInt,
+    Char,
+    SChar,
+    UChar,
+    Float,
+    Double,
+    LongDouble,
+}
+
+PointerType :: struct {
+    type : ^Type, // Pointer is there to prevent definition cycle. Null means void.
+}
+
+IdentifierType :: struct {
+    name : string,
 }
 
 FunctionPointerType :: struct {
     name : string,
-    returnType : BasicType,
+    returnType : ^Type, // Pointer is there to prevent definition cycle. Null means void.
     parameters : [dynamic]FunctionParameter,
-}
-
-Type :: union {
-    BasicType,
-    FunctionPointerType,
 }
 
 EnumMember :: struct {

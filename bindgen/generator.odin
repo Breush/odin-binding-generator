@@ -76,6 +76,8 @@ generate :: proc(
     fmt.fprint(data.handle, "\n");
     fmt.fprint(data.handle, "foreign import \"", foreignLibrary, "\"\n");
     fmt.fprint(data.handle, "\n");
+    fmt.fprint(data.handle, "import \"core:c\"\n");
+    fmt.fprint(data.handle, "\n");
 
     // Parsing header files
     for headerFile in headerFiles {
@@ -92,12 +94,12 @@ generate :: proc(
         merge_generic_nodes(&data.nodes.unionDefinitions, &headerNodes.unionDefinitions);
         merge_forward_declared_nodes(&data.nodes.structDefinitions, &headerNodes.structDefinitions);
         merge_generic_nodes(&data.nodes.functionDeclarations, &headerNodes.functionDeclarations);
-        merge_generic_nodes(&data.nodes.typeAliases, &headerNodes.typeAliases);
+        merge_generic_nodes(&data.nodes.typedefs, &headerNodes.typedefs);
     }
 
     // Exporting
     export_defines(&data);
-    export_type_aliases(&data);
+    export_typedefs(&data);
     export_enums(&data);
     export_structs(&data);
     export_unions(&data);
