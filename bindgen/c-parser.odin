@@ -44,6 +44,8 @@ is_identifier :: proc(token : string) -> bool {
 }
 
 parse :: proc(bytes : []u8, options : ParserOptions, loc := #caller_location) -> Nodes {
+    options := options;
+
     anonymousStructCount = 0;
     anonymousUnionCount = 0;
     anonymousEnumCount = 0;

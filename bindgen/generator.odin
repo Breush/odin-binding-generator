@@ -60,6 +60,7 @@ generate :: proc(
     headerFiles : []string,
     options : GeneratorOptions,
 ) {
+    options := options;
     data : GeneratorData;
     data.options = &options;
 
