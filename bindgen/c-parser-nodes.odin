@@ -30,6 +30,7 @@ FunctionDeclarationNode :: struct {
 TypedefNode :: struct {
     name : string,
     sourceType : Type,
+    dimension : u64,  // Array dimensions
 }
 
 Nodes :: struct {

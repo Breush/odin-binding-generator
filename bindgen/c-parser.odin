@@ -469,6 +469,16 @@ parse_typedef :: proc(data : ^ParserData) {
 
     knownTypeAliases[node.name] = node.sourceType;
 
+    // Checking if array
+    token := peek_token(data);
+    if token == "[" {
+        eat_token(data);
+        node.dimension = cast(u64) evaluate_i64(data);
+        check_and_eat_token(data, "]");
+    } else {
+        node.dimension = 0;
+    }
+
     // @note Commented tool for debug
     // fmt.println("Typedef: ", node.sourceType, node.name);
 

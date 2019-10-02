@@ -19,7 +19,11 @@ export_typedefs :: proc(data : ^GeneratorData) {
         aliasName := clean_pseudo_type_name(node.name, data.options);
         sourceType := clean_type(node.sourceType, data.options);
         if aliasName == sourceType do continue;
-        fmt.fprint(data.handle, aliasName, " :: ", sourceType, ";\n");
+        fmt.fprint(data.handle, aliasName, " :: ");
+        if node.dimension != 0 {
+            fmt.fprint(data.handle, "[", node.dimension, "]");
+        }
+        fmt.fprint(data.handle, sourceType, ";\n");
     }
     fmt.fprint(data.handle, "\n");
 }
