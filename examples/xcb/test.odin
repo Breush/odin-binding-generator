@@ -1,6 +1,6 @@
 package main
 
-import "./generated"
+import xcb "./generated"
 
 import "core:fmt"
 import "core:strings"

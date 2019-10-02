@@ -10,6 +10,8 @@ anonymousStructCount := 0;
 anonymousUnionCount := 0;
 anonymousEnumCount := 0;
 
+knownTypeAliases : map[string]Type;
+
 CustomHandler :: proc(data : ^ParserData);
 CustomExpressionHandler :: proc(data : ^ParserData) -> LiteralValue;
 
@@ -196,6 +198,7 @@ parse_type :: proc(data : ^ParserData, definitionPermitted := false) -> Type {
 }
 
 parse_builtin_type :: proc(data : ^ParserData) -> BuiltinType {
+    previousBuiltinType := BuiltinType.Unknown;
     intFound := false;
     shortFound := false;
     signedFound := false;
@@ -233,9 +236,46 @@ parse_builtin_type :: proc(data : ^ParserData) -> BuiltinType {
         else if token == "short" do shortFound = true;
         else if token == "unsigned" do unsignedFound = true;
         else if token == "signed" do signedFound = true;
+        else if token in knownTypeAliases {
+            builtinType, ok := knownTypeAliases[token].(BuiltinType);
+            if ok do previousBuiltinType = builtinType;
+            else do break;
+        }
         else do break;
 
         eat_token(data);
+    }
+
+    // Adapt previous builtin type
+    if previousBuiltinType == BuiltinType.ShortInt {
+        shortFound = true;
+    }
+    else if previousBuiltinType == BuiltinType.Int {
+        intFound = true;
+    }
+    else if previousBuiltinType == BuiltinType.LongInt {
+        longCount += 1;
+    }
+    else if previousBuiltinType == BuiltinType.LongLongInt {
+        longCount += 2;
+    }
+    else if previousBuiltinType == BuiltinType.UShortInt {
+        unsignedFound = true;
+        shortFound = true;
+    }
+    else if previousBuiltinType == BuiltinType.UInt {
+        unsignedFound = true;
+    }
+    else if previousBuiltinType == BuiltinType.ULongInt {
+        unsignedFound = true;
+        longCount += 1;
+    }
+    else if previousBuiltinType == BuiltinType.ULongLongInt {
+        unsignedFound = true;
+        longCount += 2;
+    }
+    else if (previousBuiltinType != BuiltinType.Unknown) {
+        return previousBuiltinType; // float, void, etc.
     }
 
     // Implicit and explicit int
@@ -426,6 +466,8 @@ parse_typedef :: proc(data : ^ParserData) {
     } else {
         node.name = parse_identifier(data);
     }
+
+    knownTypeAliases[node.name] = node.sourceType;
 
     // @note Commented tool for debug
     // fmt.println("Typedef: ", node.sourceType, node.name);
