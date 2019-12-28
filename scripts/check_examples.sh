@@ -1,5 +1,10 @@
 #!/bin/sh
 
+echo "#===== Generating parsing-test..."
+odin run ./examples/parsing-test/generate.odin
+
+# -----
+
 echo "#===== Generating xcb..."
 odin run ./examples/xcb/generate.odin
 

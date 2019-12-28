@@ -29,8 +29,7 @@ FunctionDeclarationNode :: struct {
 
 TypedefNode :: struct {
     name : string,
-    sourceType : Type,
-    dimension : u64,  // Array dimensions
+    type : Type,
 }
 
 Nodes :: struct {
@@ -48,7 +47,13 @@ LiteralValue :: union {
     string,
 }
 
-Type :: union {
+// Type, might be an array
+Type :: struct {
+    base : BaseType,
+    dimensions : [dynamic]u64,  // Array dimensions
+}
+
+BaseType :: union {
     BuiltinType,
     StandardType,
     PointerType,
@@ -116,11 +121,9 @@ EnumMember :: struct {
 StructOrUnionMember :: struct {
     name : string,
     type : Type,
-    dimensions : [dynamic]u64,  // Array dimensions
 }
 
 FunctionParameter :: struct {
     name : string,
     type : Type,
-    dimensions : [dynamic]u64,  // Array dimensions
 }

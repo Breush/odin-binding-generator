@@ -110,6 +110,26 @@ parse_identifier :: proc(data : ^ParserData, loc := #caller_location) -> string 
     return identifier;
 }
 
+parse_type_dimensions :: proc(data : ^ParserData, type : ^Type) {
+    token := peek_token(data);
+    for token == "[" {
+        eat_token(data);
+        token = peek_token(data);
+        if token == "]" {
+            pointerType : PointerType;
+            pointerType.type = new(Type);
+            pointerType.type^ = type^; // Copy
+            type.base = pointerType;
+            delete(type.dimensions);
+        } else {
+            dimension := evaluate_i64(data);
+            append(&type.dimensions, cast(u64) dimension);
+        }
+        check_and_eat_token(data, "]");
+        token = peek_token(data);
+    }
+}
+
 // This will parse anything that look like a type:
 // Builtin: char/int/float/...
 // Struct-like: struct A/struct { ... }/enum E
@@ -129,25 +149,25 @@ parse_type :: proc(data : ^ParserData, definitionPermitted := false) -> Type {
 
     // Parse main type
     if token == "struct" {
-        type = parse_struct_type(data, definitionPermitted);
+        type.base = parse_struct_type(data, definitionPermitted);
     }
     else if token == "union" {
-        type = parse_union_type(data);
+        type.base = parse_union_type(data);
     }
     else if token == "enum" {
-        type = parse_enum_type(data);
+        type.base = parse_enum_type(data);
     }
     else {
         // Test builtin type
-        type = parse_builtin_type(data);
-        if type.(BuiltinType) == BuiltinType.Unknown {
+        type.base = parse_builtin_type(data);
+        if type.base.(BuiltinType) == BuiltinType.Unknown {
             // Test standard type
-            type = parse_standard_type(data);
-            if type.(StandardType) == StandardType.Unknown {
+            type.base = parse_standard_type(data);
+            if type.base.(StandardType) == StandardType.Unknown {
                 // Basic identifier type
                 identifierType : IdentifierType;
                 identifierType.name = parse_identifier(data);
-                type = identifierType;
+                type.base = identifierType;
             }
         }
     }
@@ -168,7 +188,7 @@ parse_type :: proc(data : ^ParserData, definitionPermitted := false) -> Type {
         pointerType.type = new(Type);
         pointerType.type^ = type; // Copy
 
-        type = pointerType;
+        type.base = pointerType;
 
         // Eat qualifiers
         if token == "const" {
@@ -176,6 +196,9 @@ parse_type :: proc(data : ^ParserData, definitionPermitted := false) -> Type {
             token = peek_token(data);
         }
     }
+
+    // Parse array dimensions if any.
+    parse_type_dimensions(data, &type);
 
     // ----- Function pointer type
 
@@ -188,7 +211,7 @@ parse_type :: proc(data : ^ParserData, definitionPermitted := false) -> Type {
         functionPointerType.returnType^ = type;
         functionPointerType.name = parse_identifier(data);
 
-        type = functionPointerType;
+        type.base = functionPointerType;
 
         check_and_eat_token(data, ")");
         parse_function_parameters(data, &functionPointerType.parameters);
@@ -237,7 +260,7 @@ parse_builtin_type :: proc(data : ^ParserData) -> BuiltinType {
         else if token == "unsigned" do unsignedFound = true;
         else if token == "signed" do signedFound = true;
         else if token in knownTypeAliases {
-            builtinType, ok := knownTypeAliases[token].(BuiltinType);
+            builtinType, ok := knownTypeAliases[token].base.(BuiltinType);
             if ok do previousBuiltinType = builtinType;
             else do break;
         }
@@ -459,28 +482,21 @@ parse_typedef :: proc(data : ^ParserData) {
 
     // Parsing type
     node : TypedefNode;
-    node.sourceType = parse_type(data, true);
+    node.type = parse_type(data, true);
 
-    if sourceType, ok := node.sourceType.(FunctionPointerType); ok {
+    if sourceType, ok := node.type.base.(FunctionPointerType); ok {
         node.name = sourceType.name;
     } else {
         node.name = parse_identifier(data);
     }
 
-    knownTypeAliases[node.name] = node.sourceType;
+    knownTypeAliases[node.name] = node.type;
 
     // Checking if array
-    token := peek_token(data);
-    if token == "[" {
-        eat_token(data);
-        node.dimension = cast(u64) evaluate_i64(data);
-        check_and_eat_token(data, "]");
-    } else {
-        node.dimension = 0;
-    }
+    parse_type_dimensions(data, &node.type);
 
     // @note Commented tool for debug
-    // fmt.println("Typedef: ", node.sourceType, node.name);
+    // fmt.println("Typedef: ", node.type, node.name);
 
     append(&data.nodes.typedefs, node);
 
@@ -581,7 +597,7 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
 
         // In the case of function pointer types, the name has been parsed
         // during type inspection.
-        if type, ok := member.type.(FunctionPointerType); ok {
+        if type, ok := member.type.base.(FunctionPointerType); ok {
             member.name = type.name;
         }
         else {
@@ -596,15 +612,9 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
             }
         }
 
-        token = peek_token(data);
-        for token == "[" {
-            check_and_eat_token(data, "[");
-            dimension := evaluate_i64(data);
-            append(&member.dimensions, cast(u64) dimension);
-            check_and_eat_token(data, "]");
-            token = peek_token(data);
-        }
+        parse_type_dimensions(data, &member.type);
 
+        token = peek_token(data);
         if token == ":" {
             check_and_eat_token(data, ":");
             print_warning("Found bitfield in struct, which is not handled correctly.");
@@ -631,6 +641,15 @@ parse_variable_or_function_declaration :: proc(data : ^ParserData) {
         return;
     }
 
+    // Eat array declaration if any
+    // @fixme The return type of a function declaration will be wrong!
+    for data.bytes[data.offset] == '[' {
+        for data.bytes[data.offset] != ']' {
+            data.offset += 1;
+        }
+        data.offset += 1;
+    }
+
     name := parse_identifier(data);
 
     token = peek_token(data);
@@ -639,6 +658,14 @@ parse_variable_or_function_declaration :: proc(data : ^ParserData) {
         functionDeclarationNode.returnType = type;
         functionDeclarationNode.name = name;
         return;
+    } else if token == "[" {
+        // Eat whole array declaration
+        for data.bytes[data.offset] == '[' {
+            for data.bytes[data.offset] != ']' {
+                data.offset += 1;
+            }
+            data.offset += 1;
+        }
     }
 
     // Global variable declaration
@@ -696,21 +723,8 @@ parse_function_parameters :: proc(data : ^ParserData, parameters : ^[dynamic]Fun
         token = peek_token(data);
         if token != ")" && token != "," {
             parameter.name = parse_identifier(data);
+            parse_type_dimensions(data, &parameter.type);
             token = peek_token(data);
-
-            // Check if array dimension
-            token = peek_token(data);
-            for token == "[" {
-                check_and_eat_token(data, "[");
-                token = peek_token(data);
-                if token != "]" {
-                    dimension := evaluate_i64(data);
-                    append(&parameter.dimensions, cast(u64) dimension);
-                }
-                // @fixme Currently ignoring empty [], but shouldn't
-                check_and_eat_token(data, "]");
-                token = peek_token(data);
-            }
         }
 
         if token == "," {

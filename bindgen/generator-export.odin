@@ -16,14 +16,10 @@ export_defines :: proc(data : ^GeneratorData) {
 
 export_typedefs :: proc(data : ^GeneratorData) {
     for node in data.nodes.typedefs {
-        aliasName := clean_pseudo_type_name(node.name, data.options);
-        sourceType := clean_type(node.sourceType, data.options);
-        if aliasName == sourceType do continue;
-        fmt.fprint(data.handle, aliasName, " :: ");
-        if node.dimension != 0 {
-            fmt.fprint(data.handle, "[", node.dimension, "]");
-        }
-        fmt.fprint(data.handle, sourceType, ";\n");
+        name := clean_pseudo_type_name(node.name, data.options);
+        type := clean_type(node.type, data.options);
+        if name == type do continue;
+        fmt.fprint(data.handle, name, " :: ", type, ";\n");
     }
     fmt.fprint(data.handle, "\n");
 }
@@ -113,10 +109,6 @@ export_struct_or_union_members :: proc(data : ^GeneratorData, members : [dynamic
     for member in members {
         type := clean_type(member.type, data.options, "    ");
         name := clean_variable_name(member.name, data.options);
-        fmt.fprint(data.handle, "    ", name, " : ");
-        for dimension in member.dimensions {
-            fmt.fprint(data.handle, "[", dimension, "]");
-        }
-        fmt.fprint(data.handle, type, ",\n");
+        fmt.fprint(data.handle, "    ", name, " : ", type, ",\n");
     }
 }
