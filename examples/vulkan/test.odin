@@ -38,5 +38,11 @@ create_instance :: proc(vkc : ^VulkanContext) {
     }
     else {
         fmt.println("Unable to create instance!");
+        return;
     }
+
+    // Find physical devices
+    physicalDevicesCount : u32;
+    vk.enumerate_physical_devices(vkc.instance, &physicalDevicesCount, nil);
+    fmt.println("Found", physicalDevicesCount, "physical devices.");
 }

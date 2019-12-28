@@ -77,9 +77,13 @@ macro_define_handle :: proc(data : ^bindgen.ParserData) {
     sourceType : bindgen.IdentifierType;
     sourceType.name = structName;
 
+    pointerType : bindgen.PointerType;
+    pointerType.type = new(bindgen.Type);
+    pointerType.type.base = sourceType;
+
     typedefNode : bindgen.TypedefNode;
     typedefNode.name = object;
-    typedefNode.type.base = sourceType;
+    typedefNode.type.base = pointerType;
     append(&data.nodes.typedefs, typedefNode);
 }
 
