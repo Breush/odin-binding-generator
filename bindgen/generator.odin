@@ -68,7 +68,7 @@ generate :: proc(
     errno : os.Errno;
     data.handle, errno = os.open(outputFile, os.O_WRONLY | os.O_CREATE | os.O_TRUNC);
     if errno != 0 {
-        fmt.print_err("[bindgen] Unable to write to output file ", outputFile, " (", errno ,")\n");
+        fmt.eprint("[bindgen] Unable to write to output file ", outputFile, " (", errno ,")\n");
         return;
     }
     defer os.close(data.handle);
@@ -84,7 +84,7 @@ generate :: proc(
     for headerFile in headerFiles {
         bytes, ok := os.read_entire_file(headerFile);
         if !ok {
-            fmt.print_err("[bindgen] Unable to read file ", headerFile, "\n");
+            fmt.eprint("[bindgen] Unable to read file ", headerFile, "\n");
             return;
         }
 

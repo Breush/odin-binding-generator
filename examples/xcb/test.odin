@@ -16,7 +16,7 @@ main :: proc() {
     create_connection(&xcbc);
     create_window(&xcbc);
 
-    fmt.print("Window is open, focus it and type anything to try events.\n");
+    fmt.print("Window is open, focus it and type anything to try events. Close with ESCAPE.\n");
     for true {
         event := xcb.poll_for_event(xcbc.connection);
         if event != nil {

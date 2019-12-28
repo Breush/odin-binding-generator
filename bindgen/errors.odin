@@ -9,7 +9,7 @@ print_warning :: proc(args : ..any) {
     message := fmt.tprint(..args);
 
     if !seenWarnings[message] {
-        fmt.print_err("[bindgen] Warning: ", message, "\n");
+        fmt.eprint("[bindgen] Warning: ", message, "\n");
         seenWarnings[message] = true;
     }
 }
@@ -35,10 +35,10 @@ print_error :: proc(data : ^ParserData, loc := #caller_location, args : ..any) {
 
     line, _ := get_line_column(data);
 
-    fmt.print_err("[bindgen] Error: ", message, "\n");
-    fmt.print_err("[bindgen] ... from ", loc.procedure, "\n");
-    fmt.print_err("[bindgen] ... at line ", line, " within this context:\n");
-    fmt.print_err("> ", extract_string(data, min, max), "\n");
+    fmt.eprint("[bindgen] Error: ", message, "\n");
+    fmt.eprint("[bindgen] ... from ", loc.procedure, "\n");
+    fmt.eprint("[bindgen] ... at line ", line, " within this context:\n");
+    fmt.eprint("> ", extract_string(data, min, max), "\n");
 
     os.exit(1);
 }
