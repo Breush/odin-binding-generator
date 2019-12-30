@@ -88,9 +88,9 @@ typedef struct {} ab_my_shape_ext;
 
 | Description | Generated code |
 | ----------- | -------------- |
-| A list of prefixes that should be removed from pseudo-type names.<br/> These are recursive and will be removed as long as long possible. <ul><li>**`pseudoTypePrefixes`**` = []string{"ab_"}`</li></ul> Postfix variant **`pseudoTypePostfixes`**. | `my_shape_ext :: struct #packed {}` |
-| A list of prefixes that should be kept but ignored while prefix removing. <ul><li>`pseudoTypePrefixes = []string{"my_"}`</li><li>**`pseudoTypeTransparentPrefixes`**` = []string{"ab_"}`</li></ul> Postfix variant **`pseudoTypeTransparentPostfixes`**. | `ab_shape_ext :: struct #packed {}` |
-| Enforce a new case syntax for pseudo-types.<br/> `Case.Unknown` keeps original. <ul><li>**`pseudoTypeCase`**` = Case.Pascal`</li></ul> | `AbMyShapeExt :: struct #packed {}` |
+| A list of prefixes that should be removed from pseudo-type names.<br/> These are recursive and will be removed as long as long possible. <ul><li>**`pseudoTypePrefixes`**` = []string{"ab_"}`</li></ul> Postfix variant **`pseudoTypePostfixes`**. | `my_shape_ext :: struct {}` |
+| A list of prefixes that should be kept but ignored while prefix removing. <ul><li>`pseudoTypePrefixes = []string{"my_"}`</li><li>**`pseudoTypeTransparentPrefixes`**` = []string{"ab_"}`</li></ul> Postfix variant **`pseudoTypeTransparentPostfixes`**. | `ab_shape_ext :: struct {}` |
+| Enforce a new case syntax for pseudo-types.<br/> `Case.Unknown` keeps original. <ul><li>**`pseudoTypeCase`**` = Case.Pascal`</li></ul> | `AbMyShapeExt :: struct {}` |
 
 #### Functions
 

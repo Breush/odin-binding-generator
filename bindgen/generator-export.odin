@@ -53,7 +53,7 @@ export_enums :: proc(data : ^GeneratorData) {
 export_structs :: proc(data : ^GeneratorData) {
     for node in data.nodes.structDefinitions {
         structName := clean_pseudo_type_name(node.name, data.options);
-        fmt.fprint(data.handle, structName, " :: struct #packed {");
+        fmt.fprint(data.handle, structName, " :: struct {");
         export_struct_or_union_members(data, node.members);
         fmt.fprint(data.handle, "};\n");
         fmt.fprint(data.handle, "\n");
