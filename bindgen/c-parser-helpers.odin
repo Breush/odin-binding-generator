@@ -83,6 +83,13 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
             }
             offset += 1;
         }
+        // Possible shifts
+        else if data.bytes[offset] == '<' || data.bytes[offset] == '>' {
+            offset += 1;
+            if data.bytes[offset] == data.bytes[offset-1] {
+                offset += 1;
+            }
+        }
         // Single character
         else {
             offset += 1;

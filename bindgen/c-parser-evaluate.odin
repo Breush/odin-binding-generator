@@ -28,21 +28,19 @@ evaluate_level_5 :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool
     invalid_value : LiteralValue;
     token := peek_token(data);
 
-    if token == "<" && peek_token(data) == "<" {
+    if token == "<<" {
         v : LiteralValue;
-        eat_token(data);
         eat_token(data);
 
         v, ok = evaluate_level_5(data);
-        if is_i64(v) do value = value.(i64) << cast(uint)v.(i64);
+        if is_i64(v) do value = value.(i64) << cast(u64) v.(i64);
         else do invalid_value = v;
-    } else if token == ">" && peek_token(data) == ">" {
+    } else if token == ">>" {
         v : LiteralValue;
-        eat_token(data);
         eat_token(data);
 
         v, ok = evaluate_level_5(data);
-        if is_i64(v) do value = value.(i64) >> cast(uint)v.(i64);
+        if is_i64(v) do value = value.(i64) >> cast(u64) v.(i64);
         else do invalid_value = v;
     }
 

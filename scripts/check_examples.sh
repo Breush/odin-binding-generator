@@ -3,9 +3,6 @@
 echo "#===== Generating parsing-test..."
 odin run ./examples/parsing-test/generate.odin
 
-echo "#===== Generating bitshift operator test..."
-odin run ./examples/bitwise-shift-test/generate.odin
-
 # -----
 
 echo "#===== Generating xcb..."
