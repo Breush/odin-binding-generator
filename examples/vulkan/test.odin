@@ -45,4 +45,15 @@ create_instance :: proc(vkc : ^VulkanContext) {
     physicalDevicesCount : u32;
     vk.enumerate_physical_devices(vkc.instance, &physicalDevicesCount, nil);
     fmt.println("Found", physicalDevicesCount, "physical devices.");
+
+    if physicalDevicesCount > 0 {
+        physicalDevices := make([]vk.PhysicalDevice, physicalDevicesCount);
+        vk.enumerate_physical_devices(vkc.instance, &physicalDevicesCount, &physicalDevices[0]);
+
+        for i : u32 = 0; i < physicalDevicesCount; i += 1 {
+            physicalDeviceProperties : vk.PhysicalDeviceProperties;
+            vk.get_physical_device_properties(physicalDevices[i], &physicalDeviceProperties);
+            fmt.println("->", cast(cstring) &physicalDeviceProperties.deviceName[0]);
+        }
+    }
 }
