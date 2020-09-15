@@ -6,7 +6,7 @@ import "core:os"
 seenWarnings : map[string]bool;
 
 print_warning :: proc(args : ..any) {
-    message := fmt.tprint(..args);
+    message := tcat(..args);
 
     if !seenWarnings[message] {
         fmt.eprint("[bindgen] Warning: ", message, "\n");
@@ -15,7 +15,7 @@ print_warning :: proc(args : ..any) {
 }
 
 print_error :: proc(data : ^ParserData, loc := #caller_location, args : ..any) {
-    message := fmt.tprint(..args);
+    message := tcat(..args);
 
     min : u32 = 0;
     for i := data.offset - 1; i > 0; i -= 1 {

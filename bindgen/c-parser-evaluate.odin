@@ -129,7 +129,7 @@ evaluate_level_0 :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool
     }
     // Number literal
     else if (token[0] == '-') || (token[0] >= '0' && token[0] <= '9') {
-        value = evaluate_number_literal(data);
+        value, ok = evaluate_number_literal(data);
     }
     // String literal
     else if token[0] == '"' {
@@ -184,7 +184,7 @@ evaluate_parentheses :: proc(data : ^ParserData) -> (value : LiteralValue, ok : 
     return;
 }
 
-evaluate_number_literal :: proc(data : ^ParserData) -> (value : LiteralValue) {
+evaluate_number_literal :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool) {
     token := parse_any(data);
 
     // Check if any point or scientific notation in number
@@ -200,14 +200,14 @@ evaluate_number_literal :: proc(data : ^ParserData) -> (value : LiteralValue) {
 
     // Floating point
     if !isHexadecimal && (foundPointOrExp || token[len(token)-1] == 'f') {
-        value = strconv.parse_f64(token);
+        value, ok = strconv.parse_f64(token);
     }
     // Integer
     else {
-        value = strconv.parse_i64(token);
+        value, ok = strconv.parse_i64(token);
     }
 
-    return value;
+    return value, ok;
 }
 
 evaluate_string_literal :: proc(data : ^ParserData) -> string {

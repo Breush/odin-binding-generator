@@ -1,6 +1,8 @@
 package bindgen
 
 import "core:fmt"
+import "core:os"
+import "core:strings"
 import "core:unicode/utf8"
 
 Case :: enum {
@@ -39,34 +41,49 @@ to_lowercase :: proc(c : rune) -> rune {
     return c;
 }
 
+// @note Stolen tprint and fprint from fmt package, but it was confusing due to args: ..any and sep default parameter.
+tcat :: proc(args: ..any) -> string {
+    str := strings.make_builder(context.temp_allocator);
+    fmt.sbprint(buf=&str, args=args, sep="");
+    return strings.to_string(str);
+}
+
+fcat :: proc(fd: os.Handle, args: ..any) -> int {
+    data: [fmt.DEFAULT_BUFFER_SIZE]byte;
+    buf := strings.builder_from_slice(data[:]);
+    res := fmt.sbprint(buf=&buf, args=args, sep="");
+    os.write_string(fd, res);
+    return len(res);
+}
+
 // Change the case convention of a word.
 change_word_case :: proc(str : string, targetCase : WordCase) -> string {
     newStr : string;
     if targetCase == WordCase.Up {
         for c in str {
-            newStr = fmt.tprint(newStr, to_uppercase(c));
+            newStr = tcat(newStr, to_uppercase(c));
         }
     }
     else if targetCase == WordCase.Low {
         for c in str {
-            newStr = fmt.tprint(newStr, to_lowercase(c));
+            newStr = tcat(newStr, to_lowercase(c));
         }
     }
     else if targetCase == WordCase.FirstUp {
         for c, i in str {
             if i == 0 {
-                newStr = fmt.tprint(newStr, to_uppercase(c));
+                newStr = tcat(newStr, to_uppercase(c));
             } else {
-                newStr = fmt.tprint(newStr, to_lowercase(c));
+                newStr = tcat(newStr, to_lowercase(c));
             }
         }
     }
     else if targetCase == WordCase.FirstUpNumberReset {
         for c, i in str {
             if i == 0 || (str[i - 1] >= '0' && str[i - 1] <= '9') {
-                newStr = fmt.tprint(newStr, to_uppercase(c));
+                newStr = tcat(newStr, to_uppercase(c));
             } else {
-                newStr = fmt.tprint(newStr, to_lowercase(c));
+                newStr = tcat(newStr, to_lowercase(c));
             }
         }
     }
@@ -87,31 +104,31 @@ change_case :: proc(str : string, targetCase : Case) -> string {
     newStr : string;
     if targetCase == Case.Pascal {
         for part, i in parts {
-            newStr = fmt.tprint(newStr, change_word_case(part, WordCase.FirstUpNumberReset));
+            newStr = tcat(newStr, change_word_case(part, WordCase.FirstUpNumberReset));
         }
     }
     else if targetCase == Case.Snake {
         for part, i in parts {
-            newStr = fmt.tprint(newStr, change_word_case(part, WordCase.Low), (i != len(parts) - 1) ? "_" : "");
+            newStr = tcat(newStr, change_word_case(part, WordCase.Low), (i != len(parts) - 1) ? "_" : "");
         }
     }
     else if targetCase == Case.Kebab {
         for part, i in parts {
-            newStr = fmt.tprint(newStr, change_word_case(part, WordCase.Low), (i != len(parts) - 1) ? "-" : "");
+            newStr = tcat(newStr, change_word_case(part, WordCase.Low), (i != len(parts) - 1) ? "-" : "");
         }
     }
     else if targetCase == Case.Camel {
         for part, i in parts {
             if i == 0 {
-                newStr = fmt.tprint(newStr, change_word_case(part, WordCase.Low));
+                newStr = tcat(newStr, change_word_case(part, WordCase.Low));
             } else {
-                newStr = fmt.tprint(newStr, change_word_case(part, WordCase.FirstUpNumberReset));
+                newStr = tcat(newStr, change_word_case(part, WordCase.FirstUpNumberReset));
             }
         }
     }
     else if targetCase == Case.Constant {
         for part, i in parts {
-            newStr = fmt.tprint(newStr, change_word_case(part, WordCase.Up), (i != len(parts) - 1) ? "_" : "");
+            newStr = tcat(newStr, change_word_case(part, WordCase.Up), (i != len(parts) - 1) ? "_" : "");
         }
     }
 
@@ -122,7 +139,7 @@ change_case :: proc(str : string, targetCase : Case) -> string {
 // Full lowercase with no separator is identified as camelCase.
 find_case :: proc(str : string) -> Case {
     refuted : bool;
-    
+
     // CONSTANT_CASE
     refuted = false;
     for c in str {
@@ -291,10 +308,10 @@ remove_prefixes :: proc(str : string, prefixes : []string, transparentPrefixes :
             if len(str) >= len(prefix) &&
             str[:len(prefix)] == prefix {
                 str = str[len(prefix):];
-                transparentStr = fmt.tprint(transparentStr, prefix);
+                transparentStr = tcat(transparentStr, prefix);
                 if len(str) != 0 && (str[0] == '_' || str[0] == '-') {
                     str = str[1:];
-                    transparentStr = fmt.tprint(transparentStr, '_');
+                    transparentStr = tcat(transparentStr, '_');
                 }
                 found = true;
                 break;
@@ -302,7 +319,7 @@ remove_prefixes :: proc(str : string, prefixes : []string, transparentPrefixes :
         }
     }
 
-    return fmt.tprint(transparentStr, str);
+    return tcat(transparentStr, str);
 }
 
 // Check if str if postfixes with any of the provided strings,
@@ -342,10 +359,10 @@ remove_postfixes_with_removed :: proc(
             if len(str) >= len(postfix) &&
             str[len(str) - len(postfix):] == postfix {
                 str = str[:len(str) - len(postfix)];
-                transparentStr = fmt.tprint(postfix, transparentStr);
+                transparentStr = tcat(postfix, transparentStr);
                 if len(str) != 0 && (str[len(str)-1] == '_' || str[len(str)-1] == '-') {
                     str = str[:len(str)-1];
-                    transparentStr = fmt.tprint('_', transparentStr);
+                    transparentStr = tcat('_', transparentStr);
                 }
                 found = true;
                 break;
@@ -353,7 +370,7 @@ remove_postfixes_with_removed :: proc(
         }
     }
 
-    return fmt.tprint(str, transparentStr), removedPostfixes;
+    return tcat(str, transparentStr), removedPostfixes;
 }
 
 remove_postfixes :: proc(

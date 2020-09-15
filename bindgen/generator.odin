@@ -73,12 +73,12 @@ generate :: proc(
     }
     defer os.close(data.handle);
 
-    fmt.fprint(data.handle, "package ", packageName, "\n");
-    fmt.fprint(data.handle, "\n");
-    fmt.fprint(data.handle, "foreign import \"", foreignLibrary, "\"\n");
-    fmt.fprint(data.handle, "\n");
-    fmt.fprint(data.handle, "import _c \"core:c\"\n");
-    fmt.fprint(data.handle, "\n");
+    fcat(data.handle, "package ", packageName, "\n");
+    fcat(data.handle, "\n");
+    fcat(data.handle, "foreign import \"", foreignLibrary, "\"\n");
+    fcat(data.handle, "\n");
+    fcat(data.handle, "import _c \"core:c\"\n");
+    fcat(data.handle, "\n");
 
     // Parsing header files
     for headerFile in headerFiles {
@@ -107,13 +107,13 @@ generate :: proc(
 
     // Foreign block for functions
     foreignLibrarySimple := simplify_library_name(foreignLibrary);
-    fmt.fprint(data.handle, "@(default_calling_convention=\"c\")\n");
-    fmt.fprint(data.handle, "foreign ", foreignLibrarySimple, " {\n");
-    fmt.fprint(data.handle, "\n");
+    fcat(data.handle, "@(default_calling_convention=\"c\")\n");
+    fcat(data.handle, "foreign ", foreignLibrarySimple, " {\n");
+    fcat(data.handle, "\n");
 
     export_functions(&data);
 
-    fmt.fprint(data.handle, "}\n");
+    fcat(data.handle, "}\n");
 }
 
 // system:foo.lib -> foo

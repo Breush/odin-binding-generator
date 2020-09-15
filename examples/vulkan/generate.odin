@@ -68,7 +68,7 @@ macro_define_handle :: proc(data : ^bindgen.ParserData) {
     object := bindgen.parse_identifier(data);
     bindgen.check_and_eat_token(data, ")");
 
-    structName := fmt.tprint(object, "T");
+    structName := bindgen.tcat(object, "T");
 
     structNode : bindgen.StructDefinitionNode;
     structNode.name = structName;

@@ -22,12 +22,12 @@ clean_identifier :: proc(name : string) -> string {
 
     // Number
     if name[0] >= '0' && name[0] <= '9' {
-        return fmt.tprint("_", name);
+        return tcat("_", name);
     }
 
     // Keywords clash
     else if name == "map" || name == "proc" || name == "opaque" || name == "in" {
-        return fmt.tprint("_", name);
+        return tcat("_", name);
     }
 
     return name;
@@ -97,9 +97,9 @@ clean_type :: proc(type : Type, options : ^GeneratorOptions, baseTab : string = 
     output := "";
 
     for dimension in type.dimensions {
-        output = fmt.tprint(output, "[", dimension, "]");
+        output = tcat(output, "[", dimension, "]");
     }
-    output = fmt.tprint(output, clean_base_type(type.base, options, baseTab));
+    output = tcat(output, clean_base_type(type.base, options, baseTab));
 
     return output;
 }
@@ -146,7 +146,7 @@ clean_base_type :: proc(baseType : BaseType, options : ^GeneratorOptions, baseTa
             else if __type == BuiltinType.Char do return "cstring";
         }
         name := clean_type(_type.type^, options, baseTab);
-        return fmt.tprint("^", name);
+        return tcat("^", name);
     }
     else if _type, ok := baseType.(IdentifierType); ok {
         return clean_pseudo_type_name(_type.name, options);
@@ -154,7 +154,7 @@ clean_base_type :: proc(baseType : BaseType, options : ^GeneratorOptions, baseTa
     else if _type, ok := baseType.(FunctionPointerType); ok {
         output := "#type proc(";
         parameters := clean_function_parameters(_type.parameters, options, baseTab);
-        output = fmt.tprint(output, parameters, ")");
+        output = tcat(output, parameters, ")");
         // @fixme And return value!?
         return output;
     }
@@ -176,8 +176,8 @@ clean_function_parameters :: proc(parameters : [dynamic]FunctionParameter, optio
 
     tab := "";
     if (len(parameters) > 1) {
-        output = fmt.tprint(output, "\n");
-        tab = fmt.tprint(baseTab, "    ");
+        output = tcat(output, "\n");
+        tab = tcat(baseTab, "    ");
     }
 
     unamedParametersCount := 0;
@@ -188,19 +188,19 @@ clean_function_parameters :: proc(parameters : [dynamic]FunctionParameter, optio
         if len(parameter.name) != 0 {
             name = clean_variable_name(parameter.name, options);
         } else {
-            name = fmt.tprint("unamed", unamedParametersCount);
+            name = tcat("unamed", unamedParametersCount);
             unamedParametersCount += 1;
         }
 
-        output = fmt.tprint(output, tab, name, " : ", type);
+        output = tcat(output, tab, name, " : ", type);
 
         if i != len(parameters) - 1 {
-            output = fmt.tprint(output, ",\n");
+            output = tcat(output, ",\n");
         }
     }
 
     if (len(parameters) > 1) {
-        output = fmt.tprint(output, "\n", baseTab);
+        output = tcat(output, "\n", baseTab);
     }
 
     return output;

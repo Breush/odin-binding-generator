@@ -349,7 +349,7 @@ parse_struct_type :: proc(data : ^ParserData, definitionPermitted : bool) -> Ide
         type.name = parse_identifier(data);
         token = peek_token(data);
     } else {
-        type.name = fmt.tprint("AnonymousStruct", anonymousStructCount);
+        type.name = tcat("AnonymousStruct", anonymousStructCount);
         anonymousStructCount += 1;
     }
 
@@ -380,7 +380,7 @@ parse_union_type :: proc(data : ^ParserData) -> IdentifierType {
         type.name = parse_identifier(data);
         token = peek_token(data);
     } else {
-        type.name = fmt.tprint("AnonymousUnion", anonymousUnionCount);
+        type.name = tcat("AnonymousUnion", anonymousUnionCount);
         anonymousUnionCount += 1;
     }
 
@@ -402,7 +402,7 @@ parse_enum_type :: proc(data : ^ParserData) -> IdentifierType {
         type.name = parse_identifier(data);
         token = peek_token(data);
     } else {
-        type.name = fmt.tprint("AnonymousEnum", anonymousEnumCount);
+        type.name = tcat("AnonymousEnum", anonymousEnumCount);
         anonymousEnumCount += 1;
     }
 
@@ -604,7 +604,7 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
             // Unamed (struct or union)
             token = peek_token(data);
             if !is_identifier(token) {
-                member.name = fmt.tprint("unamed", unamedCount);
+                member.name = tcat("unamed", unamedCount);
                 unamedCount += 1;
             }
             else {

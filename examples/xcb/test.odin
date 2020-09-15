@@ -93,7 +93,8 @@ process_event :: proc(event : ^xcb.GenericEvent) -> bool {
         if keyPressEvent.detail == 9 do return true;
     }
 
-    free(event);
+    // @fixme Don't know why, segfaulting on free.
+    // free(event);
 
     return false;
 }
