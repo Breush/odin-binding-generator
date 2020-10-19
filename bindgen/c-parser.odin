@@ -581,6 +581,7 @@ parse_enum_members :: proc(data : ^ParserData, members : ^[dynamic]EnumMember) {
 /**
  *  {
  *      <type> <name>;
+ *      <type> <name1>, <name2>;
  *      <type> <name>[<dimension>];
  *  }
  */
@@ -595,34 +596,44 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
         member : StructOrUnionMember;
         member.type = parse_type(data, true);
 
-        // In the case of function pointer types, the name has been parsed
-        // during type inspection.
-        if type, ok := member.type.base.(FunctionPointerType); ok {
-            member.name = type.name;
-        }
-        else {
-            // Unamed (struct or union)
-            token = peek_token(data);
-            if !is_identifier(token) {
-                member.name = tcat("unamed", unamedCount);
-                unamedCount += 1;
+        for true {
+            // In the case of function pointer types, the name has been parsed
+            // during type inspection.
+            if type, ok := member.type.base.(FunctionPointerType); ok {
+                member.name = type.name;
             }
             else {
-                member.name = parse_identifier(data);
+                // Unamed (struct or union)
+                token = peek_token(data);
+                if !is_identifier(token) {
+                    member.name = tcat("unamed", unamedCount);
+                    unamedCount += 1;
+                }
+                else {
+                    member.name = parse_identifier(data);
+                }
             }
-        }
 
-        parse_type_dimensions(data, &member.type);
+            parse_type_dimensions(data, &member.type);
 
-        token = peek_token(data);
-        if token == ":" {
-            check_and_eat_token(data, ":");
-            print_warning("Found bitfield in struct, which is not handled correctly.");
-            evaluate_i64(data);
             token = peek_token(data);
-        }
+            if token == ":" {
+                check_and_eat_token(data, ":");
+                print_warning("Found bitfield in struct, which is not handled correctly.");
+                evaluate_i64(data);
+                token = peek_token(data);
+            }
 
-        append(structOrUnionMembers, member);
+            append(structOrUnionMembers, member);
+
+            // Multiple declarations on one line
+            if token == "," {
+                check_and_eat_token(data, ",");
+                continue;
+            }
+
+            break;
+        }
 
         check_and_eat_token(data, ";");
         token = peek_token(data);
@@ -678,6 +689,7 @@ parse_variable_or_function_declaration :: proc(data : ^ParserData) {
 
     // @todo Expose global variables to generated code?
     // And how if so?
+    print_warning("Found global variable declaration, we won't generated any binding for it.");
 }
 
 parse_function_declaration :: proc(data : ^ParserData) -> ^FunctionDeclarationNode {

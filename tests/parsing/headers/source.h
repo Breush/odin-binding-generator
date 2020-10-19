@@ -71,5 +71,10 @@ enum { // Right Shift B
 };
 
 // https://github.com/Breush/odin-binding-generator/issues/13
-float m0;
 float m0, m4, m8, m12;
+float m1;
+
+typedef struct matrix {
+    float m0, m4, m8, m12;
+    float m1;
+} matrix;
