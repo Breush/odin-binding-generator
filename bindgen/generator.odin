@@ -66,7 +66,8 @@ generate :: proc(
 
     // Outputing odin file
     errno : os.Errno;
-    data.handle, errno = os.open(outputFile, os.O_WRONLY | os.O_CREATE | os.O_TRUNC);
+    data.handle, errno = os.open(outputFile, os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
+                                             os.S_IRUSR | os.S_IWUSR | os.S_IRGRP | os.S_IWGRP | os.S_IROTH); // chmod 664 when creating file
     if errno != 0 {
         fmt.eprint("[bindgen] Unable to write to output file ", outputFile, " (", errno ,")\n");
         return;

@@ -10,11 +10,11 @@ main :: proc() {
     options : bindgen.GeneratorOptions;
 
     bindgen.generate(
-        packageName = "parsing-test",
+        packageName = "parsing",
         foreignLibrary = "",
-        outputFile = "./examples/parsing-test/generated/parsing-test.odin",
+        outputFile = "./tests/parsing/generated/parsing.odin",
         headerFiles = []string{
-            "./examples/parsing-test/headers/source.h",
+            "./tests/parsing/headers/source.h",
         },
         options = options,
     );

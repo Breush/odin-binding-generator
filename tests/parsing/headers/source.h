@@ -69,3 +69,7 @@ enum { // Right Shift B
     l4 = 11 >> 1, // Expects 5
     m4 = 12 >> 1  // Expects 6
 };
+
+// https://github.com/Breush/odin-binding-generator/issues/13
+float m0;
+float m0, m4, m8, m12;

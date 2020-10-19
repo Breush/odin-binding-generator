@@ -668,10 +668,16 @@ parse_variable_or_function_declaration :: proc(data : ^ParserData) {
         }
     }
 
-    // Global variable declaration
+    // Global variable declaration (with possible multiple declarations)
+    token = peek_token(data);
+    for token != ";" {
+        eat_token(data);
+        token = peek_token(data);
+    }
     check_and_eat_token(data, ";");
 
     // @todo Expose global variables to generated code?
+    // And how if so?
 }
 
 parse_function_declaration :: proc(data : ^ParserData) -> ^FunctionDeclarationNode {
