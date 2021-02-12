@@ -7,6 +7,8 @@ const char[] issue_7_d(void);
 const char[42] issue_7_e() {}
 const char *[42] issue_7_f() {}
 
+#define BITWISE_NOT (~0U - 1)
+
 // https://github.com/Breush/odin-binding-generator/pull/11
 enum { // Left Shift A
     a1 = -12 << 1, // Expects -24

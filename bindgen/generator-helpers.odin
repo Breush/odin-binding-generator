@@ -2,6 +2,7 @@ package bindgen
 
 import "core:fmt"
 import "core:os"
+import "core:io"
 import "core:strings"
 import "core:unicode/utf8"
 
@@ -41,19 +42,13 @@ to_lowercase :: proc(c : rune) -> rune {
     return c;
 }
 
-// @note Stolen tprint and fprint from fmt package, but it was confusing due to args: ..any and sep default parameter.
+// @note Stolen tprint and fprint from fmt package, because it was confusing due to args: ..any and sep default parameter.
 tcat :: proc(args: ..any) -> string {
-    str := strings.make_builder(context.temp_allocator);
-    fmt.sbprint(buf=&str, args=args, sep="");
-    return strings.to_string(str);
+    return fmt.tprint(args=args, sep="");
 }
 
 fcat :: proc(fd: os.Handle, args: ..any) -> int {
-    data: [fmt.DEFAULT_BUFFER_SIZE]byte;
-    buf := strings.builder_from_slice(data[:]);
-    res := fmt.sbprint(buf=&buf, args=args, sep="");
-    os.write_string(fd, res);
-    return len(res);
+    return fmt.fprint(fd=fd, args=args, sep="");
 }
 
 // Change the case convention of a word.

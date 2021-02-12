@@ -184,7 +184,7 @@ evaluate_parentheses :: proc(data : ^ParserData) -> (value : LiteralValue, ok : 
     return;
 }
 
-evaluate_number_literal :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool) {
+evaluate_number_literal :: proc(data : ^ParserData, loc := #caller_location) -> (value : LiteralValue, ok : bool) {
     token := parse_any(data);
 
     // Check if any point or scientific notation in number
@@ -196,15 +196,39 @@ evaluate_number_literal :: proc(data : ^ParserData) -> (value : LiteralValue, ok
         }
     }
 
-    isHexadecimal := len(token) >= 2 && token[:1] == "0x";
+    isHexadecimal := len(token) >= 2 && token[:2] == "0x";
+
+    // Computing postfix
+    tokenLength := len(token);
+    l := tokenLength - 1;
+    for l > 0 {
+        c := token[l];
+        if c >= '0' && c <= '9' { break; }
+        if isHexadecimal && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) { break; }
+        l -= 1;
+    }
+
+    postfix : string;
+    if l != tokenLength - 1 {
+        postfix = token[l+1:];
+        token = token[:l+1];
+    }
+
+    if postfix != "" && (postfix[0] == 'u' || postfix[0] == 'U') {
+        print_warning("Found number litteral '", token, "' with unsigned postfix, we cast it to an int64 internally.");
+    }
 
     // Floating point
-    if !isHexadecimal && (foundPointOrExp || token[len(token)-1] == 'f') {
+    if !isHexadecimal && (foundPointOrExp || postfix == "f") {
         value, ok = strconv.parse_f64(token);
     }
     // Integer
     else {
         value, ok = strconv.parse_i64(token);
+    }
+
+    if !ok {
+        print_error(data, loc, "Expected number litteral but got '", token, "'.");
     }
 
     return value, ok;
