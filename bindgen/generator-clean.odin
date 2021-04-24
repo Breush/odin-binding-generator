@@ -106,53 +106,55 @@ clean_type :: proc(type : Type, options : ^GeneratorOptions, baseTab : string = 
 
 clean_base_type :: proc(baseType : BaseType, options : ^GeneratorOptions, baseTab : string = "") -> string {
     if _type, ok := baseType.(BuiltinType); ok {
-        if _type == BuiltinType.Void do return "";
-        else if _type == BuiltinType.Int do return "_c.int";
-        else if _type == BuiltinType.UInt do return "_c.uint";
-        else if _type == BuiltinType.LongInt do return "_c.long";
-        else if _type == BuiltinType.ULongInt do return "_c.ulong";
-        else if _type == BuiltinType.LongLongInt do return "_c.longlong";
-        else if _type == BuiltinType.ULongLongInt do return "_c.ulonglong";
-        else if _type == BuiltinType.ShortInt do return "_c.short";
-        else if _type == BuiltinType.UShortInt do return "_c.ushort";
-        else if _type == BuiltinType.Char do return "_c.char";
-        else if _type == BuiltinType.SChar do return "_c.schar";
-        else if _type == BuiltinType.UChar do return "_c.uchar";
-        else if _type == BuiltinType.Float do return "_c.float";
-        else if _type == BuiltinType.Double do return "_c.double";
+        if _type == BuiltinType.Void do return options.mode == "jai" ? "void" : "";
+        else if _type == BuiltinType.Int do return options.mode == "jai" ? "s64" : "_c.int";
+        else if _type == BuiltinType.UInt do return options.mode == "jai" ? "u64" :"_c.uint";
+        else if _type == BuiltinType.LongInt do return options.mode == "jai" ? "s64" :"_c.long";
+        else if _type == BuiltinType.ULongInt do return options.mode == "jai" ? "u64" :"_c.ulong";
+        else if _type == BuiltinType.LongLongInt do return options.mode == "jai" ? "s64" :"_c.longlong";
+        else if _type == BuiltinType.ULongLongInt do return options.mode == "jai" ? "u64" :"_c.ulonglong";
+        else if _type == BuiltinType.ShortInt do return options.mode == "jai" ? "s16" :"_c.short";
+        else if _type == BuiltinType.UShortInt do return options.mode == "jai" ? "u16" :"_c.ushort";
+        else if _type == BuiltinType.Char do return options.mode == "jai" ? "u8" :"_c.char";
+        else if _type == BuiltinType.SChar do return options.mode == "jai" ? "s8" :"_c.schar";
+        else if _type == BuiltinType.UChar do return options.mode == "jai" ? "u8" :"_c.uchar";
+        else if _type == BuiltinType.Float do return options.mode == "jai" ? "float32" :"_c.float";
+        else if _type == BuiltinType.Double do return options.mode == "jai" ? "float64" :"_c.double";
         else if _type == BuiltinType.LongDouble {
             print_warning("Found long double which is currently not supported. Fallback to double in generated code.");
-            return "_c.double";
+            return options.mode == "jai" ? "double" :"_c.double";
         }
     }
     else if _type, ok := baseType.(StandardType); ok {
-        if _type == StandardType.Int8 do return "i8";
-        else if _type == StandardType.Int16 do return "i16";
-        else if _type == StandardType.Int32 do return "i32";
-        else if _type == StandardType.Int64 do return "i64";
-        else if _type == StandardType.UInt8 do return "u8";
-        else if _type == StandardType.UInt16 do return "u16";
-        else if _type == StandardType.UInt32 do return "u32";
-        else if _type == StandardType.UInt64 do return "u64";
-        else if _type == StandardType.Size do return "_c.size_t";
-        else if _type == StandardType.SSize do return "_c.ssize_t";
-        else if _type == StandardType.PtrDiff do return "_c.ptrdiff_t";
-        else if _type == StandardType.UIntPtr do return "_c.uintptr_t";
-        else if _type == StandardType.IntPtr do return "_c.intptr_t";
+        if _type == StandardType.Int8 do return options.mode == "jai" ? "s8" :"i8";
+        else if _type == StandardType.Int16 do return options.mode == "jai" ? "s16" :"i16";
+        else if _type == StandardType.Int32 do return options.mode == "jai" ? "s32" :"i32";
+        else if _type == StandardType.Int64 do return options.mode == "jai" ? "s64" :"i64";
+        else if _type == StandardType.UInt8 do return options.mode == "jai" ? "u8" :"u8";
+        else if _type == StandardType.UInt16 do return options.mode == "jai" ? "u16" :"u16";
+        else if _type == StandardType.UInt32 do return options.mode == "jai" ? "u32" :"u32";
+        else if _type == StandardType.UInt64 do return options.mode == "jai" ? "u64" :"u64";
+        else if _type == StandardType.Size do return options.mode == "jai" ? "u64" :"_c.size_t";
+        else if _type == StandardType.SSize do return options.mode == "jai" ? "u64" :"_c.ssize_t";
+        else if _type == StandardType.PtrDiff do return options.mode == "jai" ? "s64" :"_c.ptrdiff_t";
+        else if _type == StandardType.UIntPtr do return options.mode == "jai" ? "u64" :"_c.uintptr_t";
+        else if _type == StandardType.IntPtr do return options.mode == "jai" ? "s64" :"_c.intptr_t";
     }
     else if _type, ok := baseType.(PointerType); ok {
-        if __type, ok := _type.type.base.(BuiltinType); ok {
-            if __type == BuiltinType.Void do return "rawptr";
-            else if __type == BuiltinType.Char do return "cstring";
+        if options.mode != "jai" {
+            if __type, ok := _type.type.base.(BuiltinType); ok {
+                if __type == BuiltinType.Void do return "rawptr";
+                else if __type == BuiltinType.Char do return "cstring";
+            }
         }
         name := clean_type(_type.type^, options, baseTab);
-        return tcat("^", name);
+        return tcat(options.mode == "jai" ? "*" :"^", name);
     }
     else if _type, ok := baseType.(IdentifierType); ok {
         return clean_pseudo_type_name(_type.name, options);
     }
     else if _type, ok := baseType.(FunctionPointerType); ok {
-        output := "#type proc(";
+        output := options.mode == "jai" ? "#type (" :"#type proc(";
         parameters := clean_function_parameters(_type.parameters, options, baseTab);
         output = tcat(output, parameters, ")");
         // @fixme And return value!?

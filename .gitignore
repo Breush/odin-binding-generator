@@ -1,4 +1,5 @@
 **/generated/*.odin
+**/generated/*.jai
 
 *.bc
 *.ll

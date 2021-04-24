@@ -27,7 +27,7 @@ export_typedefs :: proc(data : ^GeneratorData) {
 export_enums :: proc(data : ^GeneratorData) {
     for node in data.nodes.enumDefinitions {
         enumName := clean_pseudo_type_name(node.name, data.options);
-        fcat(data.handle, enumName, " :: enum i32 {");
+        fcat(data.handle, enumName, data.options.mode == "jai" ? ":: enum s32 {" :" :: enum i32 {");
 
         postfixes : [dynamic]string;
         enumName, postfixes = clean_enum_name_for_prefix_removal(enumName, data.options);
@@ -45,7 +45,7 @@ export_enums :: proc(data : ^GeneratorData) {
         }
 
         export_enum_members(data, node.members, enumName, postfixes[:]);
-        fcat(data.handle, "};\n");
+        fcat(data.handle, data.options.mode == "jai" ? "}\n" : "};\n");
         fcat(data.handle, "\n");
     }
 }
@@ -55,7 +55,7 @@ export_structs :: proc(data : ^GeneratorData) {
         structName := clean_pseudo_type_name(node.name, data.options);
         fcat(data.handle, structName, " :: struct {");
         export_struct_or_union_members(data, node.members);
-        fcat(data.handle, "};\n");
+        fcat(data.handle, data.options.mode == "jai" ? "}\n" : "};\n");
         fcat(data.handle, "\n");
     }
 }
@@ -63,9 +63,9 @@ export_structs :: proc(data : ^GeneratorData) {
 export_unions :: proc(data : ^GeneratorData) {
     for node in data.nodes.unionDefinitions {
         unionName := clean_pseudo_type_name(node.name, data.options);
-        fcat(data.handle, unionName, " :: struct #raw_union {");
+        fcat(data.handle, unionName, data.options.mode == "jai" ? " :: union {" : " :: struct #raw_union {");
         export_struct_or_union_members(data, node.members);
-        fcat(data.handle, "};\n");
+        fcat(data.handle, data.options.mode == "jai" ? "}\n" : "};\n");
         fcat(data.handle, "\n");
     }
 }
@@ -73,15 +73,23 @@ export_unions :: proc(data : ^GeneratorData) {
 export_functions :: proc(data : ^GeneratorData) {
     for node in data.nodes.functionDeclarations {
         functionName := clean_function_name(node.name, data.options);
-        fcat(data.handle, "    @(link_name=\"", node.name, "\")\n");
-        fcat(data.handle, "    ", functionName, " :: proc(");
-        parameters := clean_function_parameters(node.parameters, data.options, "    ");
+        if data.options.mode == "jai" {
+            fcat(data.handle, functionName, " :: (");
+        } else {
+            fcat(data.handle, "    @(link_name=\"", node.name, "\")\n");
+            fcat(data.handle, "    ", functionName, " :: proc(");
+        }
+        parameters := clean_function_parameters(node.parameters, data.options, data.options.mode == "jai" ? "" : "    ");
         fcat(data.handle, parameters, ")");
         returnType := clean_type(node.returnType, data.options);
         if len(returnType) > 0 {
             fcat(data.handle, " -> ", returnType);
         }
-        fcat(data.handle, " ---;\n");
+        if data.options.mode == "jai" {
+            fcat(data.handle, " #foreign ", data.foreignLibrary, " \"", node.name ,"\";\n");
+        } else {
+            fcat(data.handle, " ---;\n");
+        }
         fcat(data.handle, "\n");
     }
 }
@@ -96,9 +104,9 @@ export_enum_members :: proc(data : ^GeneratorData, members : [dynamic]EnumMember
         if len(name) == 0 do continue;
         fcat(data.handle, "    ", name);
         if member.hasValue {
-            fcat(data.handle, " = ", member.value);
+            fcat(data.handle, data.options.mode == "jai" ? " :: " : " = ", member.value);
         }
-        fcat(data.handle, ",\n");
+        fcat(data.handle, data.options.mode == "jai" ? ";\n" : ",\n");
     }
 }
 
@@ -109,6 +117,6 @@ export_struct_or_union_members :: proc(data : ^GeneratorData, members : [dynamic
     for member in members {
         type := clean_type(member.type, data.options, "    ");
         name := clean_variable_name(member.name, data.options);
-        fcat(data.handle, "    ", name, " : ", type, ",\n");
+        fcat(data.handle, "    ", name, " : ", type, data.options.mode == "jai" ? ";\n" : ",\n");
     }
 }

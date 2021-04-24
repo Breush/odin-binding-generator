@@ -9,6 +9,8 @@ import "core:fmt"
 import "core:runtime"
 
 GeneratorOptions :: struct {
+    mode : string, // "odin" or "jai"
+
     // Variable
     variableCase : Case,
 
@@ -50,6 +52,7 @@ GeneratorData :: struct {
     nodes : Nodes,
 
     // References
+    foreignLibrary : string,
     options : ^GeneratorOptions,
 }
 
@@ -63,6 +66,11 @@ generate :: proc(
     options := options;
     data : GeneratorData;
     data.options = &options;
+    data.foreignLibrary = foreignLibrary;
+
+    if options.mode == "" {
+        options.mode = "odin";
+    }
 
     // Outputing odin file
     errno : os.Errno;
@@ -80,12 +88,17 @@ generate :: proc(
     }
     defer os.close(data.handle);
 
-    fcat(data.handle, "package ", packageName, "\n");
-    fcat(data.handle, "\n");
-    fcat(data.handle, "foreign import \"", foreignLibrary, "\"\n");
-    fcat(data.handle, "\n");
-    fcat(data.handle, "import _c \"core:c\"\n");
-    fcat(data.handle, "\n");
+    if options.mode == "jai" {
+        fcat(data.handle, foreignLibrary, " :: #foreign_library \"", foreignLibrary, "\";\n");
+        fcat(data.handle, "\n");
+    } else {
+        fcat(data.handle, "package ", packageName, "\n");
+        fcat(data.handle, "\n");
+        fcat(data.handle, "foreign import \"", foreignLibrary, "\"\n");
+        fcat(data.handle, "\n");
+        fcat(data.handle, "import _c \"core:c\"\n");
+        fcat(data.handle, "\n");
+    }
 
     // Parsing header files
     for headerFile in headerFiles {
@@ -113,14 +126,18 @@ generate :: proc(
     export_unions(&data);
 
     // Foreign block for functions
-    foreignLibrarySimple := simplify_library_name(foreignLibrary);
-    fcat(data.handle, "@(default_calling_convention=\"c\")\n");
-    fcat(data.handle, "foreign ", foreignLibrarySimple, " {\n");
-    fcat(data.handle, "\n");
+    if options.mode != "jai" {
+        foreignLibrarySimple := simplify_library_name(foreignLibrary);
+        fcat(data.handle, "@(default_calling_convention=\"c\")\n");
+        fcat(data.handle, "foreign ", foreignLibrarySimple, " {\n");
+        fcat(data.handle, "\n");
+    }
 
     export_functions(&data);
 
-    fcat(data.handle, "}\n");
+    if options.mode != "jai" {
+        fcat(data.handle, "}\n");
+    }
 }
 
 // system:foo.lib -> foo
