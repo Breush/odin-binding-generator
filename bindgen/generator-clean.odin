@@ -30,6 +30,11 @@ clean_identifier :: proc(name : string) -> string {
         return tcat("_", name);
     }
 
+    // Jai keywords clash
+    else if name == "context" {
+        return tcat("_", name);
+    }
+
     return name;
 }
 
@@ -93,18 +98,20 @@ clean_define_name :: proc(defineName : string, options : ^GeneratorOptions) -> s
 }
 
 // Convert to Odin's types
-clean_type :: proc(type : Type, options : ^GeneratorOptions, baseTab : string = "") -> string {
+clean_type :: proc(data : ^GeneratorData, type : Type, baseTab : string = "") -> string {
     output := "";
 
     for dimension in type.dimensions {
         output = tcat(output, "[", dimension, "]");
     }
-    output = tcat(output, clean_base_type(type.base, options, baseTab));
+    output = tcat(output, clean_base_type(data, type.base, baseTab));
 
     return output;
 }
 
-clean_base_type :: proc(baseType : BaseType, options : ^GeneratorOptions, baseTab : string = "") -> string {
+clean_base_type :: proc(data : ^GeneratorData, baseType : BaseType, baseTab : string = "") -> string {
+    options := data.options;
+
     if _type, ok := baseType.(BuiltinType); ok {
         if _type == BuiltinType.Void do return options.mode == "jai" ? "void" : "";
         else if _type == BuiltinType.Int do return options.mode == "jai" ? "s64" : "_c.int";
@@ -141,13 +148,19 @@ clean_base_type :: proc(baseType : BaseType, options : ^GeneratorOptions, baseTa
         else if _type == StandardType.IntPtr do return options.mode == "jai" ? "s64" :"_c.intptr_t";
     }
     else if _type, ok := baseType.(PointerType); ok {
-        if options.mode != "jai" {
+        if options.mode == "jai" {
+            // Hide pointers to types that were not declared.
+            if !is_known_base_type(data, _type.type.base) {
+                print_warning("*", _type.type.base.(IdentifierType).name, " replaced by *void as the pointed type is unknown.");
+                return "*void";
+            }
+        } else {
             if __type, ok := _type.type.base.(BuiltinType); ok {
                 if __type == BuiltinType.Void do return "rawptr";
                 else if __type == BuiltinType.Char do return "cstring";
             }
         }
-        name := clean_type(_type.type^, options, baseTab);
+        name := clean_type(data, _type.type^, baseTab);
         return tcat(options.mode == "jai" ? "*" :"^", name);
     }
     else if _type, ok := baseType.(IdentifierType); ok {
@@ -155,7 +168,7 @@ clean_base_type :: proc(baseType : BaseType, options : ^GeneratorOptions, baseTa
     }
     else if _type, ok := baseType.(FunctionPointerType); ok {
         output := options.mode == "jai" ? "#type (" :"#type proc(";
-        parameters := clean_function_parameters(_type.parameters, options, baseTab);
+        parameters := clean_function_parameters(data, _type.parameters, baseTab);
         output = tcat(output, parameters, ")");
         // @fixme And return value!?
         return output;
@@ -164,8 +177,9 @@ clean_base_type :: proc(baseType : BaseType, options : ^GeneratorOptions, baseTa
     return "<niy>";
 }
 
-clean_function_parameters :: proc(parameters : [dynamic]FunctionParameter, options : ^GeneratorOptions, baseTab : string) -> string {
+clean_function_parameters :: proc(data : ^GeneratorData, parameters : [dynamic]FunctionParameter, baseTab : string) -> string {
     output := "";
+    options := data.options;
 
     // Special case: function(void) does not really have a parameter
     if len(parameters) == 1 {
@@ -184,7 +198,7 @@ clean_function_parameters :: proc(parameters : [dynamic]FunctionParameter, optio
 
     unamedParametersCount := 0;
     for parameter, i in parameters {
-        type := clean_type(parameter.type, options);
+        type := clean_type(data, parameter.type);
 
         name : string;
         if len(parameter.name) != 0 {
@@ -206,4 +220,22 @@ clean_function_parameters :: proc(parameters : [dynamic]FunctionParameter, optio
     }
 
     return output;
+}
+
+is_known_base_type :: proc(data : ^GeneratorData, baseType : BaseType) -> bool {
+    if _type, ok := baseType.(IdentifierType); ok {
+        for it in data.nodes.typedefs {
+            if _type.name == it.name {
+                return true;
+            }
+        }
+        for it in data.nodes.structDefinitions {
+            if _type.name == it.name {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    return true;
 }

@@ -17,7 +17,7 @@ export_defines :: proc(data : ^GeneratorData) {
 export_typedefs :: proc(data : ^GeneratorData) {
     for node in data.nodes.typedefs {
         name := clean_pseudo_type_name(node.name, data.options);
-        type := clean_type(node.type, data.options);
+        type := clean_type(data, node.type);
         if name == type do continue;
         fcat(data.handle, name, " :: ", type, ";\n");
     }
@@ -27,7 +27,7 @@ export_typedefs :: proc(data : ^GeneratorData) {
 export_enums :: proc(data : ^GeneratorData) {
     for node in data.nodes.enumDefinitions {
         enumName := clean_pseudo_type_name(node.name, data.options);
-        fcat(data.handle, enumName, data.options.mode == "jai" ? ":: enum s32 {" :" :: enum i32 {");
+        fcat(data.handle, enumName, data.options.mode == "jai" ? " :: enum s32 {" :" :: enum i32 {");
 
         postfixes : [dynamic]string;
         enumName, postfixes = clean_enum_name_for_prefix_removal(enumName, data.options);
@@ -79,9 +79,9 @@ export_functions :: proc(data : ^GeneratorData) {
             fcat(data.handle, "    @(link_name=\"", node.name, "\")\n");
             fcat(data.handle, "    ", functionName, " :: proc(");
         }
-        parameters := clean_function_parameters(node.parameters, data.options, data.options.mode == "jai" ? "" : "    ");
+        parameters := clean_function_parameters(data, node.parameters, data.options.mode == "jai" ? "" : "    ");
         fcat(data.handle, parameters, ")");
-        returnType := clean_type(node.returnType, data.options);
+        returnType := clean_type(data, node.returnType);
         if len(returnType) > 0 {
             fcat(data.handle, " -> ", returnType);
         }
@@ -93,7 +93,6 @@ export_functions :: proc(data : ^GeneratorData) {
         fcat(data.handle, "\n");
     }
 }
-
 
 export_enum_members :: proc(data : ^GeneratorData, members : [dynamic]EnumMember, enumName : string, postfixes : []string) {
     if (len(members) > 0) {
@@ -115,7 +114,7 @@ export_struct_or_union_members :: proc(data : ^GeneratorData, members : [dynamic
         fcat(data.handle, "\n");
     }
     for member in members {
-        type := clean_type(member.type, data.options, "    ");
+        type := clean_type(data, member.type, "    ");
         name := clean_variable_name(member.name, data.options);
         fcat(data.handle, "    ", name, " : ", type, data.options.mode == "jai" ? ";\n" : ",\n");
     }

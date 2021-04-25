@@ -178,6 +178,14 @@ evaluate_parentheses :: proc(data : ^ParserData) -> (value : LiteralValue, ok : 
         value, ok = evaluate(data);
         return;
     }
+    // Cast to enum value (via "(enum XXX)" syntax)
+    else if token == "enum" {
+        check_and_eat_token(data, "enum");
+        eat_token(data);
+        check_and_eat_token(data, ")");
+        value, ok = evaluate(data);
+        return;
+    }
 
     value, ok = evaluate(data);
     check_and_eat_token(data, ")");
