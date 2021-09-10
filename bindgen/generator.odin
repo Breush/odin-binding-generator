@@ -104,6 +104,10 @@ generate :: proc(
     }
 
     // Parsing header files
+    anonymousStructCount = 0;
+    anonymousUnionCount = 0;
+    anonymousEnumCount = 0;
+
     for headerFile in headerFiles {
         bytes, ok := os.read_entire_file(headerFile);
         if !ok {

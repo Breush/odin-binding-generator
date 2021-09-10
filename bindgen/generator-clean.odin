@@ -245,6 +245,16 @@ is_known_base_type :: proc(data : ^GeneratorData, baseType : BaseType) -> bool {
                 return true;
             }
         }
+        for it in data.nodes.enumDefinitions {
+            if _type.name == it.name {
+                return true;
+            }
+        }
+        for it in data.nodes.unionDefinitions {
+            if _type.name == it.name {
+                return true;
+            }
+        }
         return false;
     }
 

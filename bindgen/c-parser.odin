@@ -48,10 +48,6 @@ is_identifier :: proc(token : string) -> bool {
 parse :: proc(bytes : []u8, options : ParserOptions, loc := #caller_location) -> Nodes {
     options := options;
 
-    anonymousStructCount = 0;
-    anonymousUnionCount = 0;
-    anonymousEnumCount = 0;
-
     data : ParserData;
     data.bytes = bytes;
     data.bytesLength = cast(u32) len(bytes);
@@ -350,16 +346,13 @@ parse_struct_type :: proc(data : ^ParserData, definitionPermitted : bool) -> Ide
         token = peek_token(data);
     } else {
         type.name = tcat("AnonymousStruct", anonymousStructCount);
+        type.anonymous = true;
         anonymousStructCount += 1;
     }
 
     if token == "{" {
         node := parse_struct_definition(data);
         node.name = type.name;
-
-        if node.name == "VRTextureBounds_t" {
-            fmt.println(node.members);
-        }
     } else if definitionPermitted {
         // @note Whatever happens, we create a definition of the struct,
         // as it might be used to forward declare it and then use it only with a pointer.
@@ -369,10 +362,6 @@ parse_struct_type :: proc(data : ^ParserData, definitionPermitted : bool) -> Ide
         node.forwardDeclared = false;
         node.name = type.name;
         append(&data.nodes.structDefinitions, node);
-
-        if node.name == "VRTextureBounds_t" {
-            fmt.println(node);
-        }
     }
 
     return type;
@@ -389,6 +378,7 @@ parse_union_type :: proc(data : ^ParserData) -> IdentifierType {
         token = peek_token(data);
     } else {
         type.name = tcat("AnonymousUnion", anonymousUnionCount);
+        type.anonymous = true;
         anonymousUnionCount += 1;
     }
 
@@ -411,6 +401,7 @@ parse_enum_type :: proc(data : ^ParserData) -> IdentifierType {
         token = peek_token(data);
     } else {
         type.name = tcat("AnonymousEnum", anonymousEnumCount);
+        type.anonymous = true;
         anonymousEnumCount += 1;
     }
 
@@ -472,6 +463,32 @@ parse_define :: proc(data : ^ParserData) {
     }
 }
 
+// @fixme Move
+change_anonymous_node_name :: proc (data : ^ParserData, oldName : string, newName : string) -> bool {
+    for i := 0; i < len(data.nodes.structDefinitions); i += 1 {
+        if data.nodes.structDefinitions[i].name == oldName {
+            data.nodes.structDefinitions[i].name = newName;
+            return true;
+        }
+    }
+
+    for i := 0; i < len(data.nodes.enumDefinitions); i += 1 {
+        if data.nodes.enumDefinitions[i].name == oldName {
+            data.nodes.enumDefinitions[i].name = newName;
+            return true;
+        }
+    }
+
+    for i := 0; i < len(data.nodes.unionDefinitions); i += 1 {
+        if data.nodes.unionDefinitions[i].name == oldName {
+            data.nodes.unionDefinitions[i].name = newName;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /**
  * Type aliasing.
  *  typedef <sourceType> <name>;
@@ -483,8 +500,6 @@ parse_typedef :: proc(data : ^ParserData) {
     // are generated within type parsing.
     //
     // So that typedef struct { int foo; }* Ap; is valid.
-    // Please note that generated code will create an "Anonymous struct"
-    // and a type alias in such cases.
 
     // Parsing type
     node : TypedefNode;
@@ -496,17 +511,27 @@ parse_typedef :: proc(data : ^ParserData) {
         node.name = parse_identifier(data);
     }
 
-    knownTypeAliases[node.name] = node.type;
-
     // Checking if array
     parse_type_dimensions(data, &node.type);
 
-    // @note Commented tool for debug
-    // fmt.println("Typedef: ", node.type, node.name);
+    // If the underlying type is anonymous,
+    // we just affect it the name.
+    addTypedefNode := true;
+    if identifierType, ok := node.type.base.(IdentifierType); ok {
+        if identifierType.anonymous {
+            addTypedefNode = !change_anonymous_node_name(data, identifierType.name, node.name);
+        }
+    }
 
-    append(&data.nodes.typedefs, node);
+    if addTypedefNode {
+        knownTypeAliases[node.name] = node.type;
+        append(&data.nodes.typedefs, node);
+    }
 
     check_and_eat_token(data, ";");
+
+    // @note Commented tool for debug
+    // fmt.println("Typedef: ", node.type, node.name);
 }
 
 parse_struct_definition :: proc(data : ^ParserData) -> ^StructDefinitionNode {

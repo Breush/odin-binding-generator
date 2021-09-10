@@ -104,6 +104,7 @@ PointerType :: struct {
 
 IdentifierType :: struct {
     name : string,
+    anonymous : bool, // An anonymous identifier can be hard-given a name in some contexts.
 }
 
 FunctionPointerType :: struct {
