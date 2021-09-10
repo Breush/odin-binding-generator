@@ -126,24 +126,19 @@ evaluate_level_0 :: proc(data : ^ParserData) -> (value : LiteralValue, ok : bool
     // Parentheses
     if token == "(" {
         value, ok = evaluate_parentheses(data);
-    }
-    // Number literal
+    } // Number literal
     else if (token[0] == '-') || (token[0] >= '0' && token[0] <= '9') {
         value, ok = evaluate_number_literal(data);
-    }
-    // String literal
+    } // String literal
     else if token[0] == '"' {
         value = evaluate_string_literal(data);
-    }
-    // Function-like
+    } // Function-like
     else if token == "sizeof" {
         value = evaluate_sizeof(data);
-    }
-    // Knowned literal
+    } // Knowned literal
     else if token in data.knownedLiterals {
         value = evaluate_knowned_literal(data);
-    }
-    // Custom expression
+    } // Custom expression
     else if token in data.options.customExpressionHandlers {
         value = data.options.customExpressionHandlers[token](data);
     }
@@ -177,8 +172,7 @@ evaluate_parentheses :: proc(data : ^ParserData) -> (value : LiteralValue, ok : 
         check_and_eat_token(data, ")");
         value, ok = evaluate(data);
         return;
-    }
-    // Cast to enum value (via "(enum XXX)" syntax)
+    } // Cast to enum value (via "(enum XXX)" syntax)
     else if token == "enum" {
         check_and_eat_token(data, "enum");
         eat_token(data);
@@ -237,8 +231,7 @@ evaluate_number_literal :: proc(data : ^ParserData, loc := #caller_location) -> 
     // Floating point
     if !isHexadecimal && (foundPointOrExp || postfix == "f") {
         value, ok = strconv.parse_f64(token);
-    }
-    // Integer
+    } // Integer
     else {
         value, ok = strconv.parse_i64(token);
     }

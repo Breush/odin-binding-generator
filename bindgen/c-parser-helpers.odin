@@ -35,8 +35,7 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
         }
         if offset != data.offset {
             // Nothing to do: we found an identifier
-        }
-        // Number literal
+        } // Number literal
         else if (data.bytes[offset] >= '0' && data.bytes[offset] <= '9') {
             offset += 1;
             // Hexademical literal
@@ -47,8 +46,7 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
                     (data.bytes[offset] >= 'A' && data.bytes[offset] <= 'F') {
                     offset += 1;
                 }
-            }
-            // Basic number literal
+            } // Basic number literal
             else {
                 for (data.bytes[offset] >= '0' && data.bytes[offset] <= '9') ||
                     data.bytes[offset] == '.' {
@@ -73,23 +71,20 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
                 (data.bytes[offset] == 'f') {
                 offset += 1;
             }
-        }
-        // String literal
+        } // String literal
         else if data.bytes[offset] == '"' {
             offset += 1;
             for data.bytes[offset-1] == '\\' || data.bytes[offset] != '"' {
                 offset += 1;
             }
             offset += 1;
-        }
-        // Possible shifts
+        } // Possible shifts
         else if data.bytes[offset] == '<' || data.bytes[offset] == '>' {
             offset += 1;
             if data.bytes[offset] == data.bytes[offset-1] {
                 offset += 1;
             }
-        }
-        // Single character
+        } // Single character
         else {
             offset += 1;
         }
@@ -114,17 +109,13 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
             offset += 1;
 
             data.offset = offset;
-        }
-
-        // Ignore certain keywords
+        } // Ignore certain keywords
         else if (token == "inline" || token == "__inline" || token == "static"
                 || token == "restrict" || token == "__restrict"
                 || token == "volatile"
                 || token == "__extension__") {
             data.offset = offset;
-        }
-
-        // Ignore ignored tokens ;)
+        } // Ignore ignored tokens ;)
         else {
             for ignoredToken in data.options.ignoredTokens {
                 if token == ignoredToken {
@@ -169,8 +160,7 @@ eat_comment :: proc(data : ^ParserData) {
     // Line comment
     if data.bytes[data.offset + 1] == '/' {
         eat_line(data);
-    }
-    // Range comment
+    } // Range comment
     else if data.bytes[data.offset + 1] == '*' {
         data.offset += 2;
         for data.bytes[data.offset] != '*' || data.bytes[data.offset + 1] != '/' {

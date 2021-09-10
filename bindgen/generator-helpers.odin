@@ -149,8 +149,7 @@ find_case :: proc(str : string) -> Case {
         // snake_case
         if c == '_' {
             return Case.Snake;
-        }
-        // kebab-case
+        } // kebab-case
         else if c == '-' {
             return Case.Kebab;
         }
@@ -176,8 +175,7 @@ autosplit_string :: proc(str : string) -> [dynamic]string {
         // If any '_', split according to that (CONSTANT_CASE or snake_case)
         if c == '_' {
             return split_from_separator(str, '_');
-        }
-        // If any '-', split according to that (kebab-case)
+        } // If any '-', split according to that (kebab-case)
         else if c == '-' {
             return split_from_separator(str, '-');
         }
@@ -322,8 +320,7 @@ remove_prefixes :: proc(str : string, prefixes : []string, transparentPrefixes :
 remove_postfixes_with_removed :: proc(
     str : string,
     postfixes : []string,
-    transparentPostfixes : []string = nil
-) -> (string, [dynamic]string) {
+    transparentPostfixes : []string = nil) -> (string, [dynamic]string) {
     str := str;
     removedPostfixes : [dynamic]string;
     transparentStr := "";
@@ -369,8 +366,7 @@ remove_postfixes_with_removed :: proc(
 remove_postfixes :: proc(
     str : string,
     postfixes : []string,
-    transparentPostfixes : []string = nil
-) -> string {
+    transparentPostfixes : []string = nil) -> string {
     str := str;
     removedPostfixes : [dynamic]string;
     str, removedPostfixes = remove_postfixes_with_removed(str, postfixes, transparentPostfixes);

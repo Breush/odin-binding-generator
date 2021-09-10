@@ -431,8 +431,7 @@ parse_directive :: proc(data : ^ParserData) {
     token := peek_token(data);
     if token == "define" {
         parse_define(data);
-    }
-    // We ignore all other directives
+    } // We ignore all other directives
     else {
         eat_line(data);
     }
@@ -450,8 +449,7 @@ parse_define :: proc(data : ^ParserData) {
         node.value = 1;
         append(&data.nodes.defines, node);
         data.knownedLiterals[node.name] = node.value;
-    }
-    // Macros are ignored
+    } // Macros are ignored
     else if is_define_macro(data) {
         print_warning("Ignoring define macro for ", node.name, ".");
     }
@@ -742,8 +740,7 @@ parse_function_declaration :: proc(data : ^ParserData) -> ^FunctionDeclarationNo
             if bracesCount == 0 do break;
         }
         data.offset += 1;
-    }
-    // Function declaration
+    } // Function declaration
     else {
         check_and_eat_token(data, ";");
     }

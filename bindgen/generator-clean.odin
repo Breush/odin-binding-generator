@@ -23,14 +23,10 @@ clean_identifier :: proc(name : string) -> string {
     // Number
     if name[0] >= '0' && name[0] <= '9' {
         return tcat("_", name);
-    }
-
-    // Keywords clash
+    } // Keywords clash
     else if name == "map" || name == "proc" || name == "opaque" || name == "in" {
         return tcat("_", name);
-    }
-
-    // Jai keywords clash
+    } // Jai keywords clash
     else if name == "context" ||
             name == "float32" || name == "float64" ||
             name == "s8" || name == "s16" || name == "s32" || name == "s64" ||
