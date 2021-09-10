@@ -17,7 +17,7 @@ export_defines :: proc(data : ^GeneratorData) {
 export_typedefs :: proc(data : ^GeneratorData) {
     for node in data.nodes.typedefs {
         name := clean_pseudo_type_name(node.name, data.options);
-        type := clean_type(data, node.type);
+        type := clean_type(data, node.type, "", true);
         if name == type do continue;
         fcat(data.handle, name, " :: ", type, ";\n");
     }
@@ -27,7 +27,24 @@ export_typedefs :: proc(data : ^GeneratorData) {
 export_enums :: proc(data : ^GeneratorData) {
     for node in data.nodes.enumDefinitions {
         enumName := clean_pseudo_type_name(node.name, data.options);
-        fcat(data.handle, enumName, data.options.mode == "jai" ? " :: enum s32 {" :" :: enum i32 {");
+
+        if data.options.mode == "jai" {
+            consideredFlags := false;
+            for postfix in data.options.enumConsideredFlagsPostfixes {
+                if ends_with(node.name, postfix) {
+                    consideredFlags = true;
+                    break;
+                }
+            }
+
+            if consideredFlags {
+                fcat(data.handle, enumName, " :: enum_flags u32 {");
+            } else {
+                fcat(data.handle, enumName, " :: enum s32 {");
+            }
+        } else {
+            fcat(data.handle, enumName, " :: enum i32 {");
+        }
 
         postfixes : [dynamic]string;
         enumName, postfixes = clean_enum_name_for_prefix_removal(enumName, data.options);
@@ -98,14 +115,39 @@ export_enum_members :: proc(data : ^GeneratorData, members : [dynamic]EnumMember
     if (len(members) > 0) {
         fcat(data.handle, "\n");
     }
+
+    cleanedMembers : [dynamic]EnumMember;
     for member in members {
-        name := clean_enum_value_name(member.name, enumName, postfixes, data.options);
-        if len(name) == 0 do continue;
-        fcat(data.handle, "    ", name);
+        cleanedMember : EnumMember;
+        cleanedMember.hasValue = member.hasValue;
+        cleanedMember.value = member.value;
+        cleanedMember.name = clean_enum_value_name(member.name, enumName, postfixes, data.options);
+
+        if len(cleanedMember.name) == 0 {
+            // print_warning("Enum member ", member.name, " resolves to an empty name. Ignoring it.");
+            continue;
+        }
+
+        // Ensuring that we don't collide with an other enum member.
+        foundCopy := false;
+        for existingCleanedMember in cleanedMembers {
+            if cleanedMember.name == existingCleanedMember.name &&
+               cleanedMember.hasValue == existingCleanedMember.hasValue &&
+               cleanedMember.value == existingCleanedMember.value {
+                print_warning("Enum member ", member.name, " is duplicated once cleaned. Keeping only one copy.");
+                foundCopy = true;
+                break;
+            }
+        }
+        if foundCopy do continue;
+
+        fcat(data.handle, "    ", cleanedMember.name);
         if member.hasValue {
             fcat(data.handle, data.options.mode == "jai" ? " :: " : " = ", member.value);
         }
         fcat(data.handle, data.options.mode == "jai" ? ";\n" : ",\n");
+
+        append(&cleanedMembers, cleanedMember);
     }
 }
 

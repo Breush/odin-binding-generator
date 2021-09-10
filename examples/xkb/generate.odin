@@ -23,7 +23,7 @@ main :: proc() {
     options.enumValuePrefixes = []string{"XKB_"};
     options.enumValueCase = bindgen.Case.Pascal;
     options.enumValueNameRemove = true;
-    options.enumValueNameRemovePostfixes = []string{"_t", "Flags"};
+    options.enumValueNameRemovePostfixes = []string{"_t", "Flags", "Result", "Status"};
 
     bindgen.generate(
         packageName = "xkb",
@@ -31,6 +31,7 @@ main :: proc() {
         outputFile = "./examples/xkb/generated/xkb.jai",
         headerFiles = []string{"./examples/xkb/headers/xkbcommon.h",
                                "./examples/xkb/headers/xkbcommon-keysyms.h",
+                               "./examples/xkb/headers/xkbcommon-compose.h",
                                "./examples/xkb/headers/xkbcommon-x11.h"},
         options = options,
     );

@@ -37,8 +37,7 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
             // Nothing to do: we found an identifier
         }
         // Number literal
-        else if (data.bytes[offset] == '-') ||
-                (data.bytes[offset] >= '0' && data.bytes[offset] <= '9') {
+        else if (data.bytes[offset] >= '0' && data.bytes[offset] <= '9') {
             offset += 1;
             // Hexademical literal
             if data.bytes[offset - 1] == '0' && data.bytes[offset] == 'x' {

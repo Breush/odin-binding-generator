@@ -211,10 +211,10 @@ parse_type :: proc(data : ^ParserData, definitionPermitted := false) -> Type {
         functionPointerType.returnType^ = type;
         functionPointerType.name = parse_identifier(data);
 
-        type.base = functionPointerType;
-
         check_and_eat_token(data, ")");
         parse_function_parameters(data, &functionPointerType.parameters);
+
+        type.base = functionPointerType;
     }
 
     return type;
@@ -356,6 +356,10 @@ parse_struct_type :: proc(data : ^ParserData, definitionPermitted : bool) -> Ide
     if token == "{" {
         node := parse_struct_definition(data);
         node.name = type.name;
+
+        if node.name == "VRTextureBounds_t" {
+            fmt.println(node.members);
+        }
     } else if definitionPermitted {
         // @note Whatever happens, we create a definition of the struct,
         // as it might be used to forward declare it and then use it only with a pointer.
@@ -365,6 +369,10 @@ parse_struct_type :: proc(data : ^ParserData, definitionPermitted : bool) -> Ide
         node.forwardDeclared = false;
         node.name = type.name;
         append(&data.nodes.structDefinitions, node);
+
+        if node.name == "VRTextureBounds_t" {
+            fmt.println(node);
+        }
     }
 
     return type;
@@ -681,15 +689,41 @@ parse_variable_or_function_declaration :: proc(data : ^ParserData) {
 
     // Global variable declaration (with possible multiple declarations)
     token = peek_token(data);
-    for token != ";" {
-        eat_token(data);
+
+    for true {
+        if token == "," {
+            print_warning("Found global variable declaration '", name, "', we won't generated any binding for it.");
+            check_and_eat_token(data, ",");
+
+            name = parse_identifier(data);
+            token = peek_token(data);
+            continue;
+        }
+        else if token == ";" {
+            if name != "" {
+                print_warning("Found global variable declaration '", name, "', we won't generated any binding for it.");
+            }
+            check_and_eat_token(data, ";");
+            break;
+        }
+
+        // Global variable assignment, considered as constant define.
+        node : DefineNode;
+
+        check_and_eat_token(data, "=");
+        literalValue, ok := evaluate(data);
+        if ok {
+            node.name = name;
+            node.value = literalValue;
+            append(&data.nodes.defines, node);
+        }
+        else {
+            print_warning("Ignoring global variable expression for '", name, "'.");
+        }
+
+        name = "";
         token = peek_token(data);
     }
-    check_and_eat_token(data, ";");
-
-    // @todo Expose global variables to generated code?
-    // And how if so?
-    print_warning("Found global variable declaration, we won't generated any binding for it.");
 }
 
 parse_function_declaration :: proc(data : ^ParserData) -> ^FunctionDeclarationNode {

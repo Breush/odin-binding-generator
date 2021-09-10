@@ -28,6 +28,9 @@ GeneratorOptions :: struct {
     pseudoTypeTransparentPostfixes : []string,
     pseudoTypeCase : Case,
 
+    // Enums
+    enumConsideredFlagsPostfixes : []string,
+
     // Functions
     functionPrefixes : []string,
     functionTransparentPrefixes : []string,
@@ -191,7 +194,7 @@ merge_forward_declared_nodes :: proc(nodes : ^$T, headerNodes : ^T) {
         if duplicatedIndex < 0 {
             append(nodes, headerNode);
         }
-        else if !headerNode.forwardDeclared {
+        else if !headerNode.forwardDeclared && len(headerNode.members) > 0 {
             nodes[duplicatedIndex] = headerNode;
         }
     }

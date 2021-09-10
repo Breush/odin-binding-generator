@@ -334,8 +334,7 @@ remove_postfixes_with_removed :: proc(
 
         // Remove effective postfixes
         for postfix in postfixes {
-            if len(str) >= len(postfix) &&
-            str[len(str) - len(postfix):] == postfix {
+            if ends_with(str, postfix) {
                 str = str[:len(str) - len(postfix)];
                 if len(str) != 0 && (str[len(str)-1] == '_' || str[len(str)-1] == '-') {
                     str = str[:len(str)-1];
@@ -351,8 +350,7 @@ remove_postfixes_with_removed :: proc(
         // Remove transparent ones, only one by one,
         // as we want effective ones to be fully removed.
         for postfix in transparentPostfixes {
-            if len(str) >= len(postfix) &&
-            str[len(str) - len(postfix):] == postfix {
+            if ends_with(str, postfix) {
                 str = str[:len(str) - len(postfix)];
                 transparentStr = tcat(postfix, transparentStr);
                 if len(str) != 0 && (str[len(str)-1] == '_' || str[len(str)-1] == '-') {
@@ -377,4 +375,8 @@ remove_postfixes :: proc(
     removedPostfixes : [dynamic]string;
     str, removedPostfixes = remove_postfixes_with_removed(str, postfixes, transparentPostfixes);
     return str;
+}
+
+ends_with :: proc(str : string, postfix : string) -> bool {
+    return len(str) >= len(postfix) && str[len(str) - len(postfix):] == postfix;
 }

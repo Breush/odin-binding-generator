@@ -195,6 +195,14 @@ evaluate_parentheses :: proc(data : ^ParserData) -> (value : LiteralValue, ok : 
 evaluate_number_literal :: proc(data : ^ParserData, loc := #caller_location) -> (value : LiteralValue, ok : bool) {
     token := parse_any(data);
 
+    // Unary - before numbers
+    numberLitteral := token;
+    for token == "-" {
+        token = parse_any(data);
+        numberLitteral = tcat(numberLitteral, token);
+    }
+    token = numberLitteral;
+
     // Check if any point or scientific notation in number
     foundPointOrExp := false;
     for c in token {

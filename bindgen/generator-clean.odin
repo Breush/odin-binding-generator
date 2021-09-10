@@ -31,7 +31,10 @@ clean_identifier :: proc(name : string) -> string {
     }
 
     // Jai keywords clash
-    else if name == "context" {
+    else if name == "context" ||
+            name == "float32" || name == "float64" ||
+            name == "s8" || name == "s16" || name == "s32" || name == "s64" ||
+            name == "u8" || name == "u16" || name == "u32" || name == "u64" {
         return tcat("_", name);
     }
 
@@ -98,18 +101,18 @@ clean_define_name :: proc(defineName : string, options : ^GeneratorOptions) -> s
 }
 
 // Convert to Odin's types
-clean_type :: proc(data : ^GeneratorData, type : Type, baseTab : string = "") -> string {
+clean_type :: proc(data : ^GeneratorData, type : Type, baseTab : string = "", explicitSharpType := true) -> string {
     output := "";
 
     for dimension in type.dimensions {
         output = tcat(output, "[", dimension, "]");
     }
-    output = tcat(output, clean_base_type(data, type.base, baseTab));
+    output = tcat(output, clean_base_type(data, type.base, baseTab, explicitSharpType));
 
     return output;
 }
 
-clean_base_type :: proc(data : ^GeneratorData, baseType : BaseType, baseTab : string = "") -> string {
+clean_base_type :: proc(data : ^GeneratorData, baseType : BaseType, baseTab : string = "", explicitSharpType := true) -> string {
     options := data.options;
 
     if _type, ok := baseType.(BuiltinType); ok {
@@ -167,10 +170,22 @@ clean_base_type :: proc(data : ^GeneratorData, baseType : BaseType, baseTab : st
         return clean_pseudo_type_name(_type.name, options);
     }
     else if _type, ok := baseType.(FunctionPointerType); ok {
-        output := options.mode == "jai" ? "#type (" :"#type proc(";
+        output : string;
+        if explicitSharpType {
+            output = "#type ";
+        }
+        output = tcat(output, options.mode == "jai" ? "(" :"proc(");
         parameters := clean_function_parameters(data, _type.parameters, baseTab);
         output = tcat(output, parameters, ")");
-        // @fixme And return value!?
+
+        returnType := clean_type(data, _type.returnType^);
+        if len(returnType) > 0 && returnType != "void" {
+            output = tcat(output, " -> ", returnType);
+        }
+
+        if options.mode == "jai" {
+            output = tcat(output, " #foreign");
+        }
         return output;
     }
 

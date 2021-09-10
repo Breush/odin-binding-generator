@@ -10,6 +10,7 @@ import "../../bindgen"
 
 main :: proc() {
     options : bindgen.GeneratorOptions;
+    options.mode = "jai";
 
     // We remove defines' prefix.
     options.definePrefixes = []string{"VK_"};
@@ -38,6 +39,7 @@ main :: proc() {
     options.enumValueCase = bindgen.Case.Pascal;
     options.enumValueNameRemove = true;
     options.enumValueNameRemovePostfixes = []string{"FlagBits", "EXT", "KHR", "AMD", "NV", "NVX", "IMG", "GOOGLE"};
+    options.enumConsideredFlagsPostfixes = []string{"FlagBits", "FlagBitsEXT", "FlagBitsKHR", "FlagBitsAMD", "FlagBitsNV", "FlagBitsNVX", "FlagBitsIMG", "FlagBitsGOOGLE"};
 
     // Vulkan header has some weird macros, we handle these here.
     options.parserOptions.customHandlers["VK_DEFINE_HANDLE"] = macro_define_handle;
@@ -52,9 +54,17 @@ main :: proc() {
     // Platform-dependent APIs are in different headers.
     bindgen.generate(
         packageName = "vk",
-        foreignLibrary = "system:vulkan",
-        outputFile = "./examples/vulkan/generated/vulkan-core.odin",
+        foreignLibrary = "libvulkan",
+        outputFile = "./examples/vulkan/generated/vulkan-core.jai",
         headerFiles = []string{"./examples/vulkan/headers/vulkan_core.h"},
+        options = options,
+    );
+
+    bindgen.generate(
+        packageName = "vk",
+        foreignLibrary = "libvulkan",
+        outputFile = "./examples/vulkan/generated/vulkan-xcb.jai",
+        headerFiles = []string{"./examples/vulkan/headers/vulkan_xcb.h"},
         options = options,
     );
 }
