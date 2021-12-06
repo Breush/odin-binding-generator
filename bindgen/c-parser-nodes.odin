@@ -58,6 +58,7 @@ BaseType :: union {
     StandardType,
     PointerType,
     IdentifierType,
+    FunctionType,
     FunctionPointerType,
 }
 
@@ -105,6 +106,11 @@ PointerType :: struct {
 IdentifierType :: struct {
     name : string,
     anonymous : bool, // An anonymous identifier can be hard-given a name in some contexts.
+}
+
+FunctionType :: struct {
+    returnType : ^Type, // Pointer is there to prevent definition cycle. Null means void.
+    parameters : [dynamic]FunctionParameter,
 }
 
 FunctionPointerType :: struct {

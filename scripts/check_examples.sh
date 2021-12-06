@@ -19,5 +19,6 @@ odin run ./examples/zlib/generate.odin
 echo "#===== Testing xcb..."
 odin run ./examples/xcb/test.odin
 
-echo "#===== Testing vulkan..."
-odin run ./examples/vulkan/test.odin
+# @note No more testing vulkan generated code, as it is generated for Jai by default now.
+# echo "#===== Testing vulkan..."
+# odin run ./examples/vulkan/test.odin

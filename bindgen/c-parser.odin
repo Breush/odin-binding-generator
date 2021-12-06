@@ -511,6 +511,18 @@ parse_typedef :: proc(data : ^ParserData) {
         node.name = parse_identifier(data);
     }
 
+    // Checking if function type
+    token := peek_token(data);
+    if token == "(" {
+        functionType : FunctionType;
+        functionType.returnType = new(Type);
+        functionType.returnType^ = node.type;
+
+        parse_function_parameters(data, &functionType.parameters);
+
+        node.type.base = functionType;
+    }
+
     // Checking if array
     parse_type_dimensions(data, &node.type);
 

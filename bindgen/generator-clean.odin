@@ -165,6 +165,21 @@ clean_base_type :: proc(data : ^GeneratorData, baseType : BaseType, baseTab : st
     else if _type, ok := baseType.(IdentifierType); ok {
         return clean_pseudo_type_name(_type.name, options);
     }
+    else if _type, ok := baseType.(FunctionType); ok {
+        output : string;
+        if explicitSharpType {
+            output = "#type ";
+        }
+        output = tcat(output, options.mode == "jai" ? "(" :"proc(");
+        parameters := clean_function_parameters(data, _type.parameters, baseTab);
+        output = tcat(output, parameters, ")");
+
+        returnType := clean_type(data, _type.returnType^);
+        if len(returnType) > 0 && returnType != "void" {
+            output = tcat(output, " -> ", returnType);
+        }
+        return output;
+    }
     else if _type, ok := baseType.(FunctionPointerType); ok {
         output : string;
         if explicitSharpType {
@@ -202,9 +217,11 @@ clean_function_parameters :: proc(data : ^GeneratorData, parameters : [dynamic]F
     }
 
     tab := "";
-    if (len(parameters) > 1) {
-        output = tcat(output, "\n");
-        tab = tcat(baseTab, "    ");
+    if options.mode == "jai" { // @note :OdinCodingStyle Odin forces a coding style, now. Ugh.
+        if (len(parameters) > 1) {
+            output = tcat(output, "\n");
+            tab = tcat(baseTab, "    ");
+        }
     }
 
     unamedParametersCount := 0;
@@ -222,12 +239,18 @@ clean_function_parameters :: proc(data : ^GeneratorData, parameters : [dynamic]F
         output = tcat(output, tab, name, " : ", type);
 
         if i != len(parameters) - 1 {
-            output = tcat(output, ",\n");
+            if options.mode == "jai" { // @note :OdinCodingStyle
+                output = tcat(output, ",\n");
+            } else {
+                output = tcat(output, ", ");
+            }
         }
     }
 
     if (len(parameters) > 1) {
-        output = tcat(output, "\n", baseTab);
+        if options.mode == "jai" { // @note :OdinCodingStyle
+            output = tcat(output, "\n", baseTab);
+        }
     }
 
     return output;
