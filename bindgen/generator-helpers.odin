@@ -167,6 +167,7 @@ find_case :: proc(str : string) -> Case {
 // Splits the string according to detected case.
 //  HeyBuddy -> {"Hey", "Buddy"}
 //  hey-buddy -> {"hey", "buddy"}
+//  _hey_buddy -> {"", "hey", "buddy"}
 // and such...
 autosplit_string :: proc(str : string) -> [dynamic]string {
     lowCount := 0;
@@ -201,14 +202,27 @@ autosplit_string :: proc(str : string) -> [dynamic]string {
 split_from_separator :: proc(str : string, sep : rune) -> [dynamic]string {
     parts : [dynamic]string;
 
-    // Ignore non letter prefix
     lastI := 0;
+
+    // Empty strings for starting separators in string
     for c in str {
-        if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') {
+        if c == sep {
+            append(&parts, "");
             lastI += 1;
-        }
-        else {
+        } else {
             break;
+        }
+    }
+
+    // Ignore non letter prefix
+    if lastI == 0 {
+        for c in str {
+            if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') {
+                lastI += 1;
+            }
+            else {
+                break;
+            }
         }
     }
 

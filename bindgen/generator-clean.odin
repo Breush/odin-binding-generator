@@ -71,11 +71,12 @@ clean_enum_value_name :: proc(valueName : string, enumName : string, postfixes :
 
     valueName = remove_prefixes(valueName, options.enumValuePrefixes, options.enumValueTransparentPrefixes);
     valueName = remove_postfixes(valueName, postfixes, options.enumValueTransparentPostfixes);
-    valueName = change_case(valueName, options.enumValueCase);
 
     if options.enumValueNameRemove {
         valueName = remove_prefixes(valueName, []string{enumName});
     }
+
+    valueName = change_case(valueName, options.enumValueCase);
 
     return clean_identifier(valueName);
 }

@@ -56,6 +56,9 @@ export_enums :: proc(data : ^GeneratorData) {
             postfixes[i] = change_case(postfix, enumValueCase);
         }
 
+        // And changing the case of enumName to the enum value one
+        enumName = change_case(enumName, enumValueCase);
+
         // Merging enum value postfixes with postfixes that have been removed from the enum name.
         for postfix in data.options.enumValuePostfixes {
             append(&postfixes, postfix);
