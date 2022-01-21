@@ -157,14 +157,10 @@ parse_type :: proc(data : ^ParserData, definitionPermitted := false) -> Type {
         // Test builtin type
         type.base = parse_builtin_type(data);
         if type.base.(BuiltinType) == BuiltinType.Unknown {
-            // Test standard type
-            type.base = parse_standard_type(data);
-            if type.base.(StandardType) == StandardType.Unknown {
-                // Basic identifier type
-                identifierType : IdentifierType;
-                identifierType.name = parse_identifier(data);
-                type.base = identifierType;
-            }
+            // Basic identifier type
+            identifierType : IdentifierType;
+            identifierType.name = parse_identifier(data);
+            type.base = identifierType;
         }
     }
 
@@ -227,19 +223,32 @@ parse_builtin_type :: proc(data : ^ParserData) -> BuiltinType {
     for true {
         token := peek_token(data);
 
-        if token == "void" {
-            eat_token(data);
-            return BuiltinType.Void;
+        // Attribute
+        attributeFound := true;
+        if token == "long" do longCount += 1;
+        else if token == "short" do shortFound = true;
+        else if token == "unsigned" do unsignedFound = true;
+        else if token == "signed" do signedFound = true;
+        else do attributeFound = false;
+        if attributeFound { eat_token(data); continue; }
+
+        // Known type alias
+        if token in knownTypeAliases {
+            builtinType, ok := knownTypeAliases[token].base.(BuiltinType);
+            if ok {
+                eat_token(data);
+                previousBuiltinType = builtinType;
+            }
+            break;
         }
+
+        // Classic type and standard types
+        if token == "void" { eat_token(data); return BuiltinType.Void; }
         else if token == "int" {
             eat_token(data);
             intFound = true;
-            break;
         }
-        else if token == "float" {
-            eat_token(data);
-            return BuiltinType.Float;
-        }
+        else if token == "float" { eat_token(data); return BuiltinType.Float; }
         else if token == "double" {
             eat_token(data);
             if longCount == 0 do return BuiltinType.Double;
@@ -251,18 +260,44 @@ parse_builtin_type :: proc(data : ^ParserData) -> BuiltinType {
             else if unsignedFound do return BuiltinType.UChar;
             else do return BuiltinType.Char;
         }
-        else if token == "long" do longCount += 1;
-        else if token == "short" do shortFound = true;
-        else if token == "unsigned" do unsignedFound = true;
-        else if token == "signed" do signedFound = true;
-        else if token in knownTypeAliases {
-            builtinType, ok := knownTypeAliases[token].base.(BuiltinType);
-            if ok do previousBuiltinType = builtinType;
-            else do break;
+        else if token == "__int8" {
+            // @note :MicrosoftDumminess __intX are Microsoft's fixed-size integers
+            // https://docs.microsoft.com/fr-fr/cpp/cpp/int8-int16-int32-int64
+            // and for unsigned version, they prefixed it with "unsigned"...
+            eat_token(data);
+            if unsignedFound do return BuiltinType.UInt8;
+            else do return BuiltinType.Int8;
         }
-        else do break;
+        else if token == "__int16" {
+            eat_token(data);
+            if unsignedFound do return BuiltinType.UInt16;
+            else do return BuiltinType.Int16;
+        }
+        else if token == "__int32" {
+            eat_token(data);
+            if unsignedFound do return BuiltinType.UInt32;
+            else do return BuiltinType.Int32;
+        }
+        else if token == "__int64" {
+            eat_token(data);
+            if unsignedFound do return BuiltinType.UInt64;
+            else do return BuiltinType.Int64;
+        }
+        else if token == "int8_t" { eat_token(data); return BuiltinType.Int8; }
+        else if token == "int16_t" { eat_token(data); return BuiltinType.Int16; }
+        else if token == "int32_t" { eat_token(data); return BuiltinType.Int32; }
+        else if token == "int64_t" { eat_token(data); return BuiltinType.Int64; }
+        else if token == "uint8_t" { eat_token(data); return BuiltinType.UInt8; }
+        else if token == "uint16_t" { eat_token(data); return BuiltinType.UInt16; }
+        else if token == "uint32_t" { eat_token(data); return BuiltinType.UInt32; }
+        else if token == "uint64_t" { eat_token(data); return BuiltinType.UInt64; }
+        else if token == "size_t" { eat_token(data); return BuiltinType.Size; }
+        else if token == "ssize_t" { eat_token(data); return BuiltinType.SSize; }
+        else if token == "ptrdiff_t" { eat_token(data); return BuiltinType.PtrDiff; }
+        else if token == "uintptr_t" { eat_token(data); return BuiltinType.UIntPtr; }
+        else if token == "intptr_t" { eat_token(data); return BuiltinType.IntPtr; }
 
-        eat_token(data);
+        break;
     }
 
     // Adapt previous builtin type
@@ -313,26 +348,6 @@ parse_builtin_type :: proc(data : ^ParserData) -> BuiltinType {
     }
 
     return BuiltinType.Unknown;
-}
-
-parse_standard_type :: proc(data : ^ParserData) -> StandardType {
-    token := peek_token(data);
-
-    if token == "int8_t" { eat_token(data); return StandardType.Int8; }
-    else if token == "int16_t" { eat_token(data); return StandardType.Int16; }
-    else if token == "int32_t" { eat_token(data); return StandardType.Int32; }
-    else if token == "int64_t" { eat_token(data); return StandardType.Int64; }
-    else if token == "uint8_t" { eat_token(data); return StandardType.UInt8; }
-    else if token == "uint16_t" { eat_token(data); return StandardType.UInt16; }
-    else if token == "uint32_t" { eat_token(data); return StandardType.UInt32; }
-    else if token == "uint64_t" { eat_token(data); return StandardType.UInt64; }
-    else if token == "size_t" { eat_token(data); return StandardType.Size; }
-    else if token == "ssize_t" { eat_token(data); return StandardType.SSize; }
-    else if token == "ptrdiff_t" { eat_token(data); return StandardType.PtrDiff; }
-    else if token == "uintptr_t" { eat_token(data); return StandardType.UIntPtr; }
-    else if token == "intptr_t" { eat_token(data); return StandardType.IntPtr; }
-
-    return StandardType.Unknown;
 }
 
 parse_struct_type :: proc(data : ^ParserData, definitionPermitted : bool) -> IdentifierType {

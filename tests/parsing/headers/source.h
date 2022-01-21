@@ -86,3 +86,8 @@ typedef int cookie_read_function_t(void *__cookie, char *__buf, int __nbytes);
 typedef struct _IO_cookie_io_functions_t {
   cookie_read_function_t *read;
 } cookie_io_functions_t;
+
+// https://github.com/Breush/odin-binding-generator/issues/19
+typedef unsigned __int64 uintptr_t;
+typedef long int __ssize_t;
+typedef __ssize_t ssize_t;

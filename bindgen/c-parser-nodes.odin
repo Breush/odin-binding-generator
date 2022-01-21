@@ -55,7 +55,6 @@ Type :: struct {
 
 BaseType :: union {
     BuiltinType,
-    StandardType,
     PointerType,
     IdentifierType,
     FunctionType,
@@ -79,11 +78,8 @@ BuiltinType :: enum {
     Float,
     Double,
     LongDouble,
-}
 
-// Not defined by C language but in <stdint.h>
-StandardType :: enum {
-    Unknown,
+    // Not defined by C language but in <stdint.h>
     Int8,
     Int16,
     Int32,

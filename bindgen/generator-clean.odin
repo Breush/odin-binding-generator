@@ -131,21 +131,19 @@ clean_base_type :: proc(data : ^GeneratorData, baseType : BaseType, baseTab : st
             print_warning("Found long double which is currently not supported. Fallback to double in generated code.");
             return options.mode == "jai" ? "double" :"_c.double";
         }
-    }
-    else if _type, ok := baseType.(StandardType); ok {
-        if _type == StandardType.Int8 do return options.mode == "jai" ? "s8" :"i8";
-        else if _type == StandardType.Int16 do return options.mode == "jai" ? "s16" :"i16";
-        else if _type == StandardType.Int32 do return options.mode == "jai" ? "s32" :"i32";
-        else if _type == StandardType.Int64 do return options.mode == "jai" ? "s64" :"i64";
-        else if _type == StandardType.UInt8 do return options.mode == "jai" ? "u8" :"u8";
-        else if _type == StandardType.UInt16 do return options.mode == "jai" ? "u16" :"u16";
-        else if _type == StandardType.UInt32 do return options.mode == "jai" ? "u32" :"u32";
-        else if _type == StandardType.UInt64 do return options.mode == "jai" ? "u64" :"u64";
-        else if _type == StandardType.Size do return options.mode == "jai" ? "u64" :"_c.size_t";
-        else if _type == StandardType.SSize do return options.mode == "jai" ? "u64" :"_c.ssize_t";
-        else if _type == StandardType.PtrDiff do return options.mode == "jai" ? "s64" :"_c.ptrdiff_t";
-        else if _type == StandardType.UIntPtr do return options.mode == "jai" ? "u64" :"_c.uintptr_t";
-        else if _type == StandardType.IntPtr do return options.mode == "jai" ? "s64" :"_c.intptr_t";
+        else if _type == BuiltinType.Int8 do return options.mode == "jai" ? "s8" :"i8";
+        else if _type == BuiltinType.Int16 do return options.mode == "jai" ? "s16" :"i16";
+        else if _type == BuiltinType.Int32 do return options.mode == "jai" ? "s32" :"i32";
+        else if _type == BuiltinType.Int64 do return options.mode == "jai" ? "s64" :"i64";
+        else if _type == BuiltinType.UInt8 do return options.mode == "jai" ? "u8" :"u8";
+        else if _type == BuiltinType.UInt16 do return options.mode == "jai" ? "u16" :"u16";
+        else if _type == BuiltinType.UInt32 do return options.mode == "jai" ? "u32" :"u32";
+        else if _type == BuiltinType.UInt64 do return options.mode == "jai" ? "u64" :"u64";
+        else if _type == BuiltinType.Size do return options.mode == "jai" ? "u64" :"_c.size_t";
+        else if _type == BuiltinType.SSize do return options.mode == "jai" ? "u64" :"_c.ssize_t";
+        else if _type == BuiltinType.PtrDiff do return options.mode == "jai" ? "s64" :"_c.ptrdiff_t";
+        else if _type == BuiltinType.UIntPtr do return options.mode == "jai" ? "u64" :"_c.uintptr_t";
+        else if _type == BuiltinType.IntPtr do return options.mode == "jai" ? "s64" :"_c.intptr_t";
     }
     else if _type, ok := baseType.(PointerType); ok {
         if options.mode == "jai" {
