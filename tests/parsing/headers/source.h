@@ -91,3 +91,16 @@ typedef struct _IO_cookie_io_functions_t {
 typedef unsigned __int64 uintptr_t;
 typedef long int __ssize_t;
 typedef __ssize_t ssize_t;
+
+// https://github.com/Breush/odin-binding-generator/issues/21
+typedef struct test {
+    int *test1, *test2;
+    // int *test3, test4; // Unsupported, expected error.
+    // int test5, *test6; // Unsupported, expected error.
+} test;
+
+typedef struct {
+    int (*const hash)(const void *, int);
+} PyHash_FuncDef;
+
+unsigned long PyThread_start_new_thread(void (*)(void *), void *);

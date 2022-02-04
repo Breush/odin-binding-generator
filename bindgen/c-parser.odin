@@ -198,10 +198,22 @@ parse_type :: proc(data : ^ParserData, definitionPermitted := false) -> Type {
         check_and_eat_token(data, "(");
         check_and_eat_token(data, "*");
 
+        // Eat qualifiers
+        token = peek_token(data);
+        if token == "const" {
+            eat_token(data);
+            token = peek_token(data);
+        }
+
         functionPointerType : FunctionPointerType;
         functionPointerType.returnType = new(Type);
         functionPointerType.returnType^ = type;
-        functionPointerType.name = parse_identifier(data);
+
+        // Can be unnamed in function parameters...
+        token = peek_token(data);
+        if token != ")" {
+            functionPointerType.name = parse_identifier(data);
+        }
 
         check_and_eat_token(data, ")");
         parse_function_parameters(data, &functionPointerType.parameters);
@@ -687,6 +699,22 @@ parse_struct_or_union_members :: proc(data : ^ParserData, structOrUnionMembers :
             // Multiple declarations on one line
             if token == "," {
                 check_and_eat_token(data, ",");
+
+                token = peek_token(data);
+                if token == "*" {
+                    // New declaration is a pointer.
+                    check_and_eat_token(data, "*");
+                    token = peek_token(data);
+
+                    if type, ok := member.type.base.(PointerType); !ok {
+                        print_simple_error(data, "Multiple definitions do not have the same types. (Unsupported.)");
+                    }
+                } else {
+                    if type, ok := member.type.base.(PointerType); ok {
+                        print_simple_error(data, "Multiple definitions do not have the same types. (Unsupported.)");
+                    }
+                }
+
                 continue;
             }
 

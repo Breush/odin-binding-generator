@@ -14,6 +14,10 @@ print_warning :: proc(args : ..any) {
     }
 }
 
+print_simple_error :: proc(data : ^ParserData, message : string, loc := #caller_location) {
+    print_error(data, loc, message);
+}
+
 print_error :: proc(data : ^ParserData, loc := #caller_location, args : ..any) {
     message := tcat(..args);
 
