@@ -104,3 +104,8 @@ typedef struct {
 } PyHash_FuncDef;
 
 unsigned long PyThread_start_new_thread(void (*)(void *), void *);
+
+// https://github.com/Breush/odin-binding-generator/issues/22
+struct issue22 {
+    void (*exitfuncs[32])(void);
+} issue22;

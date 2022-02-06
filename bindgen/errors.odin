@@ -40,8 +40,8 @@ print_error :: proc(data : ^ParserData, loc := #caller_location, args : ..any) {
     line, _ := get_line_column(data);
 
     fmt.eprint("[bindgen] Error: ", message, "\n");
-    fmt.eprint("[bindgen] ... from ", loc.procedure, "\n");
-    fmt.eprint("[bindgen] ... at line ", line, " within this context:\n");
+    fmt.eprintf("[bindgen] ... from internal %s:%d\n", loc.procedure, loc.line);
+    fmt.eprintf("[bindgen] ... while parsing %s:%d within this context:\n", data.file, line);
     fmt.eprint("> ", extract_string(data, min, max), "\n");
 
     os.exit(1);

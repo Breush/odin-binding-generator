@@ -116,7 +116,7 @@ generate :: proc(
         }
 
         // We fuse the SOAs
-        headerNodes := parse(bytes, options.parserOptions);
+        headerNodes := parse(headerFile, bytes, options.parserOptions);
         merge_generic_nodes(&data.nodes.defines, &headerNodes.defines);
         merge_generic_nodes(&data.nodes.enumDefinitions, &headerNodes.enumDefinitions);
         merge_generic_nodes(&data.nodes.unionDefinitions, &headerNodes.unionDefinitions);

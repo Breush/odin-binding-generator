@@ -24,6 +24,7 @@ ParserOptions :: struct {
 }
 
 ParserData :: struct {
+    file : string,
     bytes : []u8,
     bytesLength : u32,
     offset : u32,
@@ -45,10 +46,11 @@ is_identifier :: proc(token : string) -> bool {
         (token[0] == '_');
 }
 
-parse :: proc(bytes : []u8, options : ParserOptions, loc := #caller_location) -> Nodes {
+parse :: proc(file : string, bytes : []u8, options : ParserOptions, loc := #caller_location) -> Nodes {
     options := options;
 
     data : ParserData;
+    data.file = file;
     data.bytes = bytes;
     data.bytesLength = cast(u32) len(bytes);
     data.options = &options;
@@ -213,7 +215,11 @@ parse_type :: proc(data : ^ParserData, definitionPermitted := false) -> Type {
         token = peek_token(data);
         if token != ")" {
             functionPointerType.name = parse_identifier(data);
+            token = peek_token(data);
         }
+
+        // Can be an array of function pointers
+        parse_type_dimensions(data, &type);
 
         check_and_eat_token(data, ")");
         parse_function_parameters(data, &functionPointerType.parameters);
