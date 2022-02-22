@@ -92,8 +92,8 @@ peek_token_end :: proc(data : ^ParserData) -> u32 {
         token := extract_string(data, data.offset, offset);
 
         // Ignore __attribute__
-        if token == "__attribute__" {
-            print_warning("__attribute__ is ignored.");
+        if (token == "__attribute__" || token == "__declspec" || token == "_Static_assert") {
+            print_warning(token, " is ignored.");
 
             for data.bytes[offset] != '(' {
                 offset += 1;
