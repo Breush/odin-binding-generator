@@ -776,9 +776,7 @@ parse_variable_or_function_declaration :: proc(data : ^ParserData) {
 
     for true {
         if token == "," {
-            node : VariableDeclarationNode;
-            node.type = type;
-            node.name = name;
+            node := VariableDeclarationNode{name, type};
             append(&data.nodes.variableDeclarations, node);
 
             check_and_eat_token(data, ",");
@@ -789,9 +787,7 @@ parse_variable_or_function_declaration :: proc(data : ^ParserData) {
         }
         else if token == ";" {
             if name != "" {
-                node : VariableDeclarationNode;
-                node.type = type;
-                node.name = name;
+                node := VariableDeclarationNode{name, type};
                 append(&data.nodes.variableDeclarations, node);
             }
             check_and_eat_token(data, ";");

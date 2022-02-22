@@ -124,6 +124,7 @@ export_variables :: proc(data : ^GeneratorData) {
         type := clean_type(data, node.type);
         fcat(data.handle, "    @(link_name=\"", node.name, "\")\n");
         fcat(data.handle, "    ", name, " : ", type, ";\n");
+        fcat(data.handle, "\n");
     }
 }
 
