@@ -10,7 +10,7 @@ main :: proc() {
     options : bindgen.GeneratorOptions;
 
     bindgen.generate(
-        packageName = "minial",
+        packageName = "zlib",
         foreignLibrary = "system:zlib",
         outputFile = "./examples/zlib/generated/zlib.odin",
         headerFiles = []string{
