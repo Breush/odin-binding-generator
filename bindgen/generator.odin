@@ -80,7 +80,7 @@ generate :: proc(
 
     // chmod 664 when creating file
     mode: int = 0;
-    when os.OS == "linux" || os.OS == "darwin" {
+    when os.OS == .Linux || os.OS == .Darwin {
         mode = os.S_IRUSR | os.S_IWUSR | os.S_IRGRP | os.S_IWGRP | os.S_IROTH;
     }
 
