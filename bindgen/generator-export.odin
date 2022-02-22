@@ -114,6 +114,19 @@ export_functions :: proc(data : ^GeneratorData) {
     }
 }
 
+export_variables :: proc(data : ^GeneratorData) {
+    for node in data.nodes.variableDeclarations {
+        if data.options.mode == "jai" {
+            print_warning("Found global variable declaration '", node.name, "', we won't generate any binding for it.");
+            continue;
+        }
+        name := clean_variable_name(node.name, data.options);
+        type := clean_type(data, node.type);
+        fcat(data.handle, "    @(link_name=\"", node.name, "\")\n");
+        fcat(data.handle, "    ", name, " : ", type, ";\n");
+    }
+}
+
 export_enum_members :: proc(data : ^GeneratorData, members : [dynamic]EnumMember, enumName : string, postfixes : []string) {
     if (len(members) > 0) {
         fcat(data.handle, "\n");

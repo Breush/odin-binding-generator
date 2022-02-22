@@ -776,7 +776,11 @@ parse_variable_or_function_declaration :: proc(data : ^ParserData) {
 
     for true {
         if token == "," {
-            print_warning("Found global variable declaration '", name, "', we won't generated any binding for it.");
+            node : VariableDeclarationNode;
+            node.type = type;
+            node.name = name;
+            append(&data.nodes.variableDeclarations, node);
+
             check_and_eat_token(data, ",");
 
             name = parse_identifier(data);
@@ -785,7 +789,10 @@ parse_variable_or_function_declaration :: proc(data : ^ParserData) {
         }
         else if token == ";" {
             if name != "" {
-                print_warning("Found global variable declaration '", name, "', we won't generated any binding for it.");
+                node : VariableDeclarationNode;
+                node.type = type;
+                node.name = name;
+                append(&data.nodes.variableDeclarations, node);
             }
             check_and_eat_token(data, ";");
             break;
