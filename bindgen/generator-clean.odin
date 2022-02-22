@@ -14,6 +14,9 @@ clean_identifier :: proc(name : string) -> string {
     for true {
         if name[0] == '_' {
             name = name[1:];
+            if name == "" {
+                return name;
+            }
         }
         else {
             break;
