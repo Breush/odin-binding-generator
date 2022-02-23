@@ -27,6 +27,11 @@ FunctionDeclarationNode :: struct {
     parameters : [dynamic]FunctionParameter,
 }
 
+VariableDeclarationNode :: struct {
+    name : string,
+    type : Type,
+}
+
 TypedefNode :: struct {
     name : string,
     type : Type,
@@ -38,6 +43,7 @@ Nodes :: struct {
     unionDefinitions : [dynamic]UnionDefinitionNode,
     structDefinitions : [dynamic]StructDefinitionNode,
     functionDeclarations : [dynamic]FunctionDeclarationNode,
+    variableDeclarations : [dynamic]VariableDeclarationNode,
     typedefs : [dynamic]TypedefNode,
 }
 

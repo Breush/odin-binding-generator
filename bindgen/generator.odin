@@ -122,6 +122,7 @@ generate :: proc(
         merge_generic_nodes(&data.nodes.unionDefinitions, &headerNodes.unionDefinitions);
         merge_forward_declared_nodes(&data.nodes.structDefinitions, &headerNodes.structDefinitions);
         merge_generic_nodes(&data.nodes.functionDeclarations, &headerNodes.functionDeclarations);
+        merge_generic_nodes(&data.nodes.variableDeclarations, &headerNodes.variableDeclarations);
         merge_generic_nodes(&data.nodes.typedefs, &headerNodes.typedefs);
     }
 
@@ -140,6 +141,7 @@ generate :: proc(
         fcat(data.handle, "\n");
     }
 
+    export_variables(&data);
     export_functions(&data);
 
     if options.mode != "jai" {
