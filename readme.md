@@ -1,7 +1,6 @@
 # Odin binding generator
 
-**I'm dropping the support of this tool at the end of 2022.**
-**This repository will be read-only starting in 2023.**
+**I dropped the support of this tool at the end of 2022.**
 **The reason is that I don't care anymore about Odin, and fixing "bugs" about C stupid syntax is not fun.**
 **Feel free to fork and keep alive if you need it.**
 
@@ -10,7 +9,7 @@ to convert a **C header file into an Odin binding file**.
 
 ## Current status
 
-**I'm dropping the support of this tool at the end of 2022.**
+**No more support of this tool since the end of 2022.**
 
 The library has been tested against multiple C-libraries,
 such as **xcb** or **vulkan**, and the generated bindings
@@ -24,7 +23,7 @@ complex macros expansions are considered "intended". The goal is not
 to parse and resolve C wrong design decisions, but just be able
 to get a `.odin` file that works with most of C libraries.
 
-**I'm dropping the support of this tool at the end of 2022.**
+**No more support of this tool since the end of 2022.**
 
 ## Usage
 
